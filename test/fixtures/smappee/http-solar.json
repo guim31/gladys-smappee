@@ -1,0 +1,36 @@
+{
+  "_source": "Shapes of the local HTTP API as pysmappee reads them (api.py SmappeeLocalApi, servicelocation.py) and as Home Assistant's tests mock them (tests/components/smappee/test_config_flow.py). Serial numbers invented. Powers in milliwatts, as strings.",
+  "logon": { "success": "Logon successful!", "header": "Logon successful!" },
+  "advancedConfigPublic": [
+    { "key": "mdnsHostName", "value": "Smappee1105000101" },
+    { "key": "firmwareVersion", "value": "1.2.3" }
+  ],
+  "configPublic": [{ "key": "emeterConfiguration", "value": "17" }],
+  "commandControlPublic": [
+    {
+      "key": "1",
+      "value": "Lave-linge",
+      "type": "2",
+      "relayStatus": true,
+      "connectionStatus": "connected",
+      "serialNumber": ""
+    },
+    {
+      "key": "2",
+      "value": "Chauffe-eau",
+      "type": "3",
+      "relayStatus": false,
+      "connectionStatus": "connected",
+      "serialNumber": "4006000102"
+    },
+    { "key": "9", "value": "Module inconnu", "type": "7" }
+  ],
+  "instantaneous": [
+    { "key": "phase0Current", "value": "8200" },
+    { "key": "phase0ActivePower", "value": "1850000" },
+    { "key": "phase0ReactivePower", "value": "120000" },
+    { "key": "phase1Current", "value": "6100" },
+    { "key": "phase1ActivePower", "value": "1400000" },
+    { "key": "phase1ReactivePower", "value": "-20000" }
+  ]
+}
