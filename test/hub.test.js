@@ -329,3 +329,78 @@ test('a device created in Gladys gets every state at once', async (t) => {
   }
   assert.ok(world.fake.widgetRefreshes.length > before);
 });
+
+test('new cloud credentials take effect without a restart', async (t) => {
+  const world = await createWorld({ cloud: true, config: { cloud_password: 'wrong' } });
+  t.after(() => world.stop());
+  assert.equal(world.hub.cloudStatus, 'refused');
+  // Refused: not asked again at every reconnection round.
+  const logins = () => world.cloud.requests.filter((r) => r.path === 'oauth2/token').length;
+  const before = logins();
+  await world.hub.reconnect();
+  assert.equal(logins(), before);
+  await world.fake.configUpdated({ ...world.gladys.fake.config, cloud_password: 'secret' });
+  await world.hub.idle();
+  assert.equal(world.hub.cloudStatus, 'ok');
+  assert.ok(world.hub.monitor(CLOUD_SERIAL).reachable);
+});
+
+test('cloud: a plug answering 404 does not stop the readings', async (t) => {
+  const world = await createWorld({ cloud: true });
+  t.after(() => world.stop());
+  await createAll(world);
+  world.hub.records.get(`actuator:${CLOUD_SERIAL}-1`).id = '77';
+  world.cloud.addBlock(300, 0);
+  await world.hub.pollCloud();
+  assert.equal(world.hub.cloudStatus, 'ok');
+  const monitor = ids(world.gladys, 'monitor', CLOUD_SERIAL);
+  assert.equal(world.fake.lastState(monitor.feature('power')), 3600);
+});
+
+test('a removed address: the monitor is no longer read locally', async (t) => {
+  const world = await createWorld({ http: true });
+  t.after(() => world.stop());
+  await world.fake.configUpdated({ ...world.gladys.fake.config, hosts: '' });
+  await world.hub.idle();
+  assert.equal(world.hub.monitor(HTTP_SERIAL).access, null);
+  assert.equal(world.fake.discoveredDevices.length, 0);
+});
+
+test('HTTP: a refused command is an error, the state does not change', async (t) => {
+  const world = await createWorld({ http: true });
+  t.after(() => world.stop());
+  await createAll(world);
+  const relay = device(world, 'actuator', `${HTTP_SERIAL}-2`);
+  world.http.data.commandControlPublic = world.http.data.commandControlPublic.filter(
+    (entry) => entry.key !== '2',
+  );
+  const handle = world.http.handle.bind(world.http);
+  world.http.server.removeAllListeners('request');
+  world.http.server.on('request', (req, res) => {
+    if (req.url.endsWith('commandControlPublic') && req.method === 'POST') {
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        if (body.startsWith('control,')) {
+          res.end(JSON.stringify({ error: 'Unknown node' }));
+        } else {
+          res.end(JSON.stringify(world.http.data.commandControlPublic));
+        }
+      });
+      return;
+    }
+    handle(req, res);
+  });
+  const ack = await world.fake.setValue(relay, relay.features[0], 1);
+  assert.equal(ack.success, false);
+  assert.equal(world.hub.records.get(`actuator:${HTTP_SERIAL}-2`).on, false);
+});
+
+test('overlapping reconnections share one run', async (t) => {
+  const world = await createWorld({ mqtt: true });
+  t.after(() => world.stop());
+  const a = world.hub.reconnect();
+  const b = world.hub.reconnect();
+  assert.equal(a, b);
+  await a;
+});

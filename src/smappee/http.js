@@ -121,8 +121,17 @@ export class SmappeeHttp {
   }
 
   /** Turn a plug or a switch on or off. */
-  control(id, on) {
+  async control(id, on) {
     const action = JSON.stringify({ controllableNodeId: String(id), action: on ? 'ON' : 'OFF' });
-    return this.call('commandControlPublic', `control,${action}`);
+    const answer = await this.call('commandControlPublic', `control,${action}`);
+    if (answer && typeof answer === 'object' && 'error' in answer) {
+      throw new SmappeeError(
+        `${this.host} refused the command: ${String(answer.error).slice(0, 80)}`,
+        {
+          kind: 'invalid',
+        },
+      );
+    }
+    return answer;
   }
 }

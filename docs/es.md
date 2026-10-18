@@ -9,7 +9,7 @@
 
 Esta integración lleva sus monitores de energía **Smappee** a Gladys: consumo de la casa, producción
 solar, importación y exportación de red, submedidores, Smappee Switch y Comfort Plug. Lee primero los
-monitores de su red local, y por la nube Smappee los que no puede alcanzar.
+monitores de su red local, y por la nube Smappee aquellos cuya dirección no introduce.
 
 | Monitor                           | Leído por                                   |
 | --------------------------------- | ------------------------------------------- |
@@ -39,8 +39,7 @@ la contraseña de fábrica.
 ### Acceso a la nube
 
 Rellene los cuatro campos de la sección **Nube Smappee** para leer los monitores que no están en su
-red, y controlar los enchufes conocidos por la nube. Un monitor leído en local nunca se vuelve a leer
-por la nube. Con tres campos de cuatro, la nube queda desactivada.
+red, y controlar los enchufes conocidos por la nube. Un monitor cuya dirección se introduce solo se lee en local, nunca por la nube: quite su dirección para leerlo por la nube. Con tres campos de cuatro, la nube queda desactivada.
 
 ### Opciones
 

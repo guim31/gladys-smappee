@@ -9,7 +9,7 @@
 
 This integration brings your **Smappee** energy monitors into Gladys: home consumption, solar
 production, grid import and export, sub-meters, Smappee Switches and Comfort Plugs. It reads the
-monitors on your local network first, and through the Smappee cloud for the ones it cannot reach.
+monitors on your local network first, and through the Smappee cloud the ones whose address you do not type.
 
 | Monitor                             | Read through                                |
 | ----------------------------------- | ------------------------------------------- |
@@ -38,8 +38,7 @@ factory password.
 ### Cloud access
 
 Fill in the four fields of the **Smappee cloud** section to read the monitors that are not on your
-network, and to control the plugs known to the cloud. A monitor read locally is never read again
-through the cloud. With three fields out of four, the cloud stays off.
+network, and to control the plugs known to the cloud. A monitor whose address is typed is read locally only, never through the cloud: remove its address to read it through the cloud. With three fields out of four, the cloud stays off.
 
 ### Options
 

@@ -331,6 +331,10 @@ if (process.argv.includes('--serve')) {
   const http = await new FakeSmappeeHttp({ host: '0.0.0.0', port: 80 }).start();
   const broker = await new FakeSmappeeBroker({ host: '0.0.0.0', port: 1883 }).start();
   const cloud = await new FakeSmappeeCloud({ host: '0.0.0.0', port: 8080 }).start();
+  // Two recent 5-minute blocks, so the cloud monitor is online.
+  cloud.data.consumption.consumptions.forEach((block, index) => {
+    block.timestamp = Date.now() - (15 - 5 * index) * 60_000;
+  });
   setInterval(() => broker.realtime(), 1000);
   console.log(`fake Smappee: HTTP ${http.port}, MQTT ${broker.port}, cloud ${cloud.port}`);
 }

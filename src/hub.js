@@ -108,7 +108,11 @@ export class SmappeeHub {
     // 'off' | 'ok' | 'refused' | 'down' | 'incomplete'
     this.cloudStatus = 'off';
     this.cloudConfigAt = 0;
-    this.cloudFailing = false;
+    // A failing cloud is asked again later and later (never faster than its data).
+    this.cloudRetryAt = 0;
+    this.cloudFailures = 0;
+    this.reconnecting = null;
+    this.publishOffset = 0;
     this.pending = new Set();
     this.timers = [];
     this.polling = null;
@@ -145,7 +149,15 @@ export class SmappeeHub {
   }
 
   async reconfigure(config) {
+    const previous = this.config;
     this.config = config;
+    if (JSON.stringify(previous?.cloud) !== JSON.stringify(config.cloud)) {
+      // New credentials (or account): a new client, without the old token.
+      this.cloud = null;
+      this.cloudStatus = 'off';
+      this.cloudRetryAt = 0;
+      this.cloudFailures = 0;
+    }
     this.disconnectAll();
     await this.connectAll();
     await this.publishEverything();
@@ -382,6 +394,19 @@ export class SmappeeHub {
 
   async connectAll() {
     await Promise.all(this.config.hosts.map((address) => this.connectHost(address)));
+    // A monitor whose address was removed from the configuration is no longer
+    // read locally: the cloud may take it over, else it leaves the list.
+    for (const record of this.records.values()) {
+      if (
+        ['http', 'mqtt'].includes(record.access) &&
+        !this.config.hosts.includes(this.monitor(record.serial)?.address ?? record.address)
+      ) {
+        record.access = null;
+        record.reachable = null;
+        record.live = {};
+        this.devicesDirty = true;
+      }
+    }
     await this.connectCloud();
     await this.save();
   }
@@ -398,6 +423,19 @@ export class SmappeeHub {
   async connectHost(address) {
     const entry = this.hosts.get(address) ?? { address, type: null, problem: null };
     this.hosts.set(address, entry);
+    if (entry.connecting) {
+      return;
+    }
+    entry.connecting = true;
+    try {
+      await this.probeHost(entry);
+    } finally {
+      entry.connecting = false;
+    }
+  }
+
+  async probeHost(entry) {
+    const { address } = entry;
     const client = new SmappeeHttp({
       host: address,
       port: this.network.httpPort ?? HTTP_PORT,
@@ -425,10 +463,14 @@ export class SmappeeHub {
       return;
     } catch (err) {
       if (err.kind === 'unauthorized') {
-        if (entry.problem !== 'password') {
-          logger.warn(`Smappee at ${address} refused the password of its local web interface`);
+        // Maybe a wrong password; maybe a web server of an MQTT monitor: try MQTT first.
+        await this.connectMqtt(entry, { quiet: true });
+        if (entry.type !== 'mqtt') {
+          if (entry.problem !== 'password') {
+            logger.warn(`Smappee at ${address} refused the password of its local web interface`);
+          }
+          entry.problem = 'password';
         }
-        entry.problem = 'password';
         return;
       }
       logger.debug(`No Smappee HTTP API at ${address}: ${err.message}`);
@@ -436,7 +478,7 @@ export class SmappeeHub {
     await this.connectMqtt(entry);
   }
 
-  async connectMqtt(entry) {
+  async connectMqtt(entry, { quiet = false } = {}) {
     const { address } = entry;
     const session = new MqttSession({
       connect: () => net.connect({ host: address, port: this.network.mqttPort ?? MQTT_PORT }),
@@ -449,11 +491,19 @@ export class SmappeeHub {
       await session.open();
     } catch (err) {
       logger.debug(`No Smappee MQTT broker at ${address}: ${err.message}`);
+      if (quiet) {
+        return;
+      }
       if (entry.problem !== 'noSmappee') {
         logger.warn(`No Smappee answers at ${address} (HTTP or MQTT), tried again later`);
       }
       entry.problem = 'noSmappee';
       entry.type = null;
+      return;
+    }
+    if (entry.closing || this.stopped) {
+      // Removed (reconfiguration, stop) while connecting.
+      session.close();
       return;
     }
     Object.assign(entry, { type: 'mqtt', session, problem: entry.serial ? null : 'waiting' });
@@ -466,7 +516,7 @@ export class SmappeeHub {
       }
     });
     session.on('close', (error) => {
-      if (entry.closing || this.stopped) {
+      if (entry.closing || this.stopped || entry.session !== session) {
         return;
       }
       logger.info(
@@ -478,7 +528,15 @@ export class SmappeeHub {
   }
 
   /** Every `reconnectMs`: lost brokers, addresses without an answer, the cloud configuration. */
-  async reconnect() {
+  reconnect() {
+    // One at a time: an address without answer takes about 10 s.
+    this.reconnecting ??= this.runReconnect().finally(() => {
+      this.reconnecting = null;
+    });
+    return this.reconnecting;
+  }
+
+  async runReconnect() {
     for (const entry of this.hosts.values()) {
       if (!entry.type && !entry.closing) {
         await this.connectHost(entry.address);
@@ -486,6 +544,7 @@ export class SmappeeHub {
     }
     if (
       this.config.cloud &&
+      Date.now() >= this.cloudRetryAt &&
       (this.cloudStatus !== 'ok' || Date.now() - this.cloudConfigAt > this.timings.cloudConfigMs)
     ) {
       await this.connectCloud();
@@ -577,7 +636,11 @@ export class SmappeeHub {
         record.on = value === 'ON';
         this.track(this.publishStates(record));
       } else if (plug[2] === 'connectionState') {
-        record.connected = value === 'CONNECTED';
+        const connected = value === 'CONNECTED';
+        if (record.connected !== connected) {
+          record.connected = connected;
+          this.track(this.publishTransports([record]));
+        }
       }
       return;
     }
@@ -693,10 +756,14 @@ export class SmappeeHub {
           record.reachable !== false &&
           now - record.lastReadingAt > this.timings.mqttStaleMs
         ) {
-          record.live = {};
-          // The indexes must not bridge the silence.
-          for (const meter of Object.values(record.meters)) {
-            meter.at = null;
+          // Neither the values nor the indexes bridge the silence.
+          for (const silent of [record, ...this.childrenOf(record.serial)]) {
+            if (silent.kind !== 'actuator') {
+              silent.live = {};
+            }
+            for (const meter of Object.values(silent.meters)) {
+              meter.at = null;
+            }
           }
           await this.setReachable(record, false);
         }
@@ -713,7 +780,11 @@ export class SmappeeHub {
       await this.publishDevices();
     }
     let widget = false;
-    for (const record of this.records.values()) {
+    // A rotating start: when the state budget runs out, not always the same devices wait.
+    const records = [...this.records.values()];
+    this.publishOffset = (this.publishOffset + 1) % Math.max(records.length, 1);
+    const ordered = [...records.slice(this.publishOffset), ...records.slice(0, this.publishOffset)];
+    for (const record of ordered) {
       const sent = await this.publishStates(record);
       if (record.kind === 'monitor' && sent.length > 0) {
         widget = true;
@@ -763,6 +834,7 @@ export class SmappeeHub {
         logger.info('Connected to the Smappee cloud');
       }
       this.cloudStatus = 'ok';
+      this.cloudFailures = 0;
       this.cloudConfigAt = Date.now();
       await this.pollCloud();
     } catch (err) {
@@ -778,6 +850,13 @@ export class SmappeeHub {
       logger.debug(`Smappee cloud: ${err.message}`);
     }
     this.cloudStatus = status;
+    this.cloudFailures += 1;
+    // Refused credentials: once an hour (no account lock-out); otherwise 5, 10, 20, 30 min.
+    this.cloudRetryAt =
+      Date.now() +
+      (status === 'refused'
+        ? 3600_000
+        : Math.min(this.timings.cloudPollMs * 2 ** (this.cloudFailures - 1), 30 * 60_000));
   }
 
   /** Every 5 minutes: the new aggregates of the monitors read through the cloud. */
@@ -793,14 +872,36 @@ export class SmappeeHub {
 
   async readCloud() {
     const now = Date.now();
-    try {
-      for (const monitor of [...this.records.values()]) {
-        if (monitor.kind !== 'monitor' || monitor.access !== 'cloud' || !monitor.locationId) {
-          continue;
+    // One site or plug answering badly (a 404...) does not stop the others; a
+    // refused token or a cloud down does.
+    const each = async (label, task) => {
+      try {
+        await task();
+        return true;
+      } catch (err) {
+        if (err.kind === 'invalid') {
+          logger.debug(`Smappee cloud, ${label}: ${err.message}`);
+          return true;
         }
+        this.cloudFailed(err);
+        return false;
+      }
+    };
+    for (const monitor of [...this.records.values()]) {
+      if (monitor.kind !== 'monitor' || monitor.access !== 'cloud' || !monitor.locationId) {
+        continue;
+      }
+      const ok = await each(`site ${monitor.locationId}`, async () => {
         // The first time, the last hour sets the starting point (no energy added).
-        const from = monitor.cloudAt === null ? now - 3600_000 : monitor.cloudAt + 1;
-        const blocks = cloudBlocks(await this.cloud.consumption(monitor.locationId, from, now));
+        // Never more than a day back (the 5-minute data are kept a few days only).
+        const from =
+          monitor.cloudAt === null
+            ? now - 3600_000
+            : Math.max(monitor.cloudAt + 1, now - 86_400_000);
+        // A block still filling (its 5 minutes not over) waits for the next read.
+        const blocks = cloudBlocks(
+          await this.cloud.consumption(monitor.locationId, from, now),
+        ).filter((block) => block.at + 5 * 60_000 <= now);
         this.applyCloudBlocks(monitor, blocks);
         const fresh =
           monitor.cloudAt !== null && now - monitor.cloudAt <= this.timings.cloudStaleMs;
@@ -810,20 +911,24 @@ export class SmappeeHub {
         if (monitor.reachable !== fresh) {
           await this.setReachable(monitor, fresh);
         }
+      });
+      if (!ok) {
+        return;
       }
-      for (const actuator of [...this.records.values()]) {
-        if (actuator.kind === 'actuator' && actuator.access === 'cloud' && actuator.locationId) {
-          const state = cloudState(
-            await this.cloud.actuatorState(actuator.locationId, actuator.id),
-          );
-          if (state !== null) {
-            actuator.on = state;
-          }
+    }
+    for (const actuator of [...this.records.values()]) {
+      if (actuator.kind !== 'actuator' || actuator.access !== 'cloud' || !actuator.locationId) {
+        continue;
+      }
+      const ok = await each(`plug ${actuator.id}`, async () => {
+        const state = cloudState(await this.cloud.actuatorState(actuator.locationId, actuator.id));
+        if (state !== null) {
+          actuator.on = state;
         }
+      });
+      if (!ok) {
+        return;
       }
-    } catch (err) {
-      this.cloudFailed(err);
-      return;
     }
     await this.publishRound();
   }

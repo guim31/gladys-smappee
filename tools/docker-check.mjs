@@ -13,9 +13,16 @@ import { Store } from '../src/store.js';
 const host = process.env.FAKE_HOST;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+let runs = 0;
+
 async function run(label, config, network) {
+  runs += 1;
   const gladys = createFakeGladys({ config: { language: 'fr', ...config } });
-  const app = registerHandlers(gladys, { store: new Store('/data'), timers: false, network });
+  const app = registerHandlers(gladys, {
+    store: new Store(`/data/check-${runs}`),
+    timers: false,
+    network,
+  });
   await gladys.connect();
   await app.ready;
   await wait(1500); // MQTT configuration and a few realtime messages

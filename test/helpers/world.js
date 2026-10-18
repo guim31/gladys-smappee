@@ -69,11 +69,11 @@ export async function createWorld({
   const fakeBroker = mqtt ? await new FakeSmappeeBroker({ host: MQTT_HOST }).start() : null;
   const fakeCloud = cloud ? await new FakeSmappeeCloud().start() : null;
   if (fakeCloud) {
-    // Two 5-minute blocks just behind now.
+    // Two complete 5-minute blocks just behind now (the next one, `addBlock`, ends now).
     const now = Date.now();
     fakeCloud.data.consumption.consumptions = [
-      { timestamp: now - 10 * 60_000, consumption: 100, solar: 40, alwaysOn: 12 },
-      { timestamp: now - 5 * 60_000, consumption: 150, solar: 50, alwaysOn: 12 },
+      { timestamp: now - 15 * 60_000, consumption: 100, solar: 40, alwaysOn: 12 },
+      { timestamp: now - 10 * 60_000, consumption: 150, solar: 50, alwaysOn: 12 },
     ];
   }
   const hosts = [http && HTTP_HOST, mqtt && MQTT_HOST].filter(Boolean).join(', ');

@@ -288,7 +288,15 @@ http://<boîtier>/gateway/apipublic/<commande>`, corps texte brut (`load`, `load
   `energy-production-sensor` ; soutirage/injection déduits (conso − production) en `grid-sensor`.
 - MQTT : énergie intégrée à chaque message (~1/s), états publiés au rythme `poll_interval`. Boîtier
   hors ligne : 3 lectures HTTP ratées, 60 s sans message MQTT, ou 30 min sans bloc cloud.
-- Comfort Plug (433 MHz, sans retour) : `has_feedback: false`. `controls` désactivé : `read_only`.
+- Cloud en échec : réessai espacé (5, 10, 20 puis 30 min ; identifiants refusés : une fois par
+  heure, pour ne pas bloquer le compte). Un site ou une prise en 404 n'arrête pas les autres. Des
+  identifiants modifiés recréent le client (`reconfigure`). Un bloc de 5 min pas encore clos est
+  ignoré ; on ne remonte jamais plus d'un jour.
+- Une adresse retirée de la configuration : son boîtier n'est plus lu en local (le cloud peut le
+  reprendre). Une API HTTP qui refuse le mot de passe : on essaie quand même MQTT avant de le dire.
+- `reconnect` ne tourne qu'une fois à la fois (une adresse muette coûte ~10 s), et une session MQTT
+  ouverte après un `disconnectAll` est refermée.
+- - Comfort Plug (433 MHz, sans retour) : `has_feedback: false`. `controls` désactivé : `read_only`.
 - Pas de découverte mDNS : HA passe par `_ssh._tcp` filtré sur le nom `smappee…`, trop large pour un
   contrat de découverte affiché à l'installation.
 - Pas d'action de scène : l'action standard « contrôler un appareil » suffit pour les prises ; la

@@ -9,7 +9,7 @@
 
 Diese Integration bringt deine **Smappee**-Energiemonitore in Gladys: Verbrauch des Hauses,
 Solarproduktion, Netzbezug und Einspeisung, Unterzähler, Smappee Switches und Comfort Plugs. Die
-Integration liest die Messgeräte zuerst im lokalen Netz und über die Smappee-Cloud die, die sie nicht erreicht.
+Integration liest die Messgeräte zuerst im lokalen Netz und über die Smappee-Cloud die, deren Adresse du nicht eingibst.
 
 | Messgerät                         | Gelesen über                                  |
 | --------------------------------- | --------------------------------------------- |
@@ -39,8 +39,7 @@ für das Werkspasswort.
 ### Cloud-Zugang
 
 Füll die vier Felder des Abschnitts **Smappee-Cloud** aus, um Messgeräte außerhalb deines Netzes zu
-lesen und die in der Cloud bekannten Steckdosen zu steuern. Ein lokal gelesenes Messgerät wird nie
-noch einmal über die Cloud gelesen. Mit drei von vier Feldern bleibt die Cloud aus.
+lesen und die in der Cloud bekannten Steckdosen zu steuern. Ein Messgerät mit eingegebener Adresse wird nur lokal gelesen, nie über die Cloud: Entferne seine Adresse, um es über die Cloud zu lesen. Mit drei von vier Feldern bleibt die Cloud aus.
 
 ### Optionen
 

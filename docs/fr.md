@@ -9,8 +9,7 @@
 
 Cette intégration amène vos moniteurs d'énergie **Smappee** dans Gladys : consommation de la maison,
 production solaire, soutirage et injection réseau, sous-compteurs, Smappee Switch et Comfort Plug.
-Elle lit les boîtiers sur votre réseau local d'abord, et par le cloud Smappee ceux qu'elle ne peut
-pas joindre.
+Elle lit les boîtiers sur votre réseau local d'abord, et par le cloud Smappee ceux dont vous ne saisissez pas l'adresse.
 
 | Boîtier                              | Lu par                                       |
 | ------------------------------------ | -------------------------------------------- |
@@ -40,8 +39,7 @@ laissez-le vide pour le mot de passe d'usine.
 ### Accès cloud
 
 Remplissez les quatre champs de la section **Cloud Smappee** pour lire les boîtiers absents de votre
-réseau, et commander les prises connues du cloud. Un boîtier lu en local n'est jamais relu par le
-cloud. Avec trois champs sur quatre, le cloud reste coupé.
+réseau, et commander les prises connues du cloud. Un boîtier dont l'adresse est saisie n'est lu qu'en local, jamais par le cloud : retirez son adresse pour le lire par le cloud. Avec trois champs sur quatre, le cloud reste coupé.
 
 ### Options
 
