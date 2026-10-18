@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-18
+
 ### Added
 
 - Smappee energy monitors in Gladys, read locally first: the local web API of
@@ -31,4 +33,5 @@ the notes of the version's GitHub Release.
 - "Search for Smappee monitors" action, with a report of what answers.
 - Documentation in English, French, German and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-smappee/commits/main
+[Unreleased]: https://github.com/guim31/gladys-smappee/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-smappee/releases/tag/v1.0.0
