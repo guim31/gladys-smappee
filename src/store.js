@@ -1,0 +1,74 @@
+// -----------------------------------------------------------------------------
+// Small persistence under /data (the only writable path of the container): the
+// Smappee monitors, sub-meters and actuators seen so far, so a restart knows
+// them before the first reading, and the energy indexes the integration adds
+// up. Losing the file restarts the indexes at 0 (Gladys sees a counter reset).
+// -----------------------------------------------------------------------------
+
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { createLogger } from '@gladysassistant/integration-sdk';
+
+const logger = createLogger({ name: 'smappee-store' });
+const FILE_NAME = 'smappee-state.json';
+
+export class Store {
+  constructor(directory = process.env.SMAPPEE_DATA_DIR || '/data') {
+    this.directory = directory;
+    this.path = join(directory, FILE_NAME);
+    this.pending = null;
+    this.writing = null;
+    // A failing write is logged once, then again when writing works.
+    this.writeFailing = false;
+  }
+
+  async load() {
+    try {
+      const data = JSON.parse(await readFile(this.path, 'utf8'));
+      return data && typeof data === 'object' ? data : {};
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        logger.warn(`Cannot read ${this.path}: ${err.message}`);
+      }
+      return {};
+    }
+  }
+
+  // Writes are coalesced and atomic (temporary file + rename): a crash never
+  // leaves half a JSON file behind.
+  save(data) {
+    this.latest = data;
+    if (!this.pending) {
+      // Chained after the write in progress, if any: one writer at a time.
+      this.pending = (this.writing ?? Promise.resolve()).then(async () => {
+        const snapshot = this.latest;
+        this.pending = null;
+        try {
+          await mkdir(this.directory, { recursive: true });
+          const temporary = `${this.path}.tmp`;
+          // Readable by the integration only (addresses of the LAN).
+          await writeFile(temporary, JSON.stringify(snapshot), { mode: 0o600 });
+          await rename(temporary, this.path);
+          if (this.writeFailing) {
+            this.writeFailing = false;
+            logger.info(`${this.path} written again`);
+          }
+        } catch (err) {
+          if (this.writeFailing) {
+            logger.debug(`Cannot write ${this.path}: ${err.message}`);
+          } else {
+            this.writeFailing = true;
+            logger.warn(`Cannot write ${this.path}: ${err.message}`);
+          }
+        }
+      });
+      this.writing = this.pending;
+    }
+    return this.pending;
+  }
+
+  /** Resolves once every write requested so far is on disk. */
+  flush() {
+    return this.writing ?? Promise.resolve();
+  }
+}

@@ -1,177 +1,434 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Smappee",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Smappee energy monitors: consumption, solar, sub-meters and plugs, read locally or from the cloud.",
+    "fr": "Moniteurs d'énergie Smappee : conso, solaire, sous-compteurs et prises, en local ou par le cloud.",
+    "de": "Smappee-Energiemonitore: Verbrauch, Solar, Unterzähler und Steckdosen, lokal oder per Cloud.",
+    "es": "Monitores de energía Smappee: consumo, solar, submedidores y enchufes, en local o por la nube."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-smappee:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-smappee/main/cover.png",
+  "categories": ["energy"],
   "transports": ["local", "cloud"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your Smappee monitors",
+        "fr": "Vos boîtiers Smappee",
+        "de": "Deine Smappee-Messgeräte",
+        "es": "Sus monitores Smappee"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Type the IP address of each Smappee: Energy, Solar and Pro are read over their local web API, Infinity, Genius and Connect over their local MQTT broker. Give it a fixed address in your router.",
+        "fr": "Saisissez l'adresse IP de chaque Smappee : Energy, Solar et Pro sont lus par leur API web locale, Infinity, Genius et Connect par leur broker MQTT local. Fixez son adresse dans votre box.",
+        "de": "Gib die IP-Adresse jedes Smappee ein: Energy, Solar und Pro werden über ihre lokale Web-API gelesen, Infinity, Genius und Connect über ihren lokalen MQTT-Broker. Gib ihm im Router eine feste Adresse.",
+        "es": "Introduzca la dirección IP de cada Smappee: Energy, Solar y Pro se leen por su API web local, Infinity, Genius y Connect por su broker MQTT local. Fíjele una dirección en su router."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-smappee/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Installationsanleitung",
+            "es": "Guía de instalación"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "hosts",
+      "type": "string",
+      "label": {
+        "en": "IP addresses of the Smappee monitors",
+        "fr": "Adresses IP des boîtiers Smappee",
+        "de": "IP-Adressen der Smappee-Messgeräte",
+        "es": "Direcciones IP de los monitores Smappee"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
       "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+        "en": "Separated by commas. Leave empty to use the cloud only.",
+        "fr": "Séparées par des virgules. Laisser vide pour n'utiliser que le cloud.",
+        "de": "Durch Kommas getrennt. Leer lassen, um nur die Cloud zu nutzen.",
+        "es": "Separadas por comas. Déjelo vacío para usar solo la nube."
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "placeholder": {
+        "en": "e.g. 192.168.1.50",
+        "fr": "ex. 192.168.1.50",
+        "de": "z. B. 192.168.1.50",
+        "es": "p. ej. 192.168.1.50"
+      },
       "required": false,
-      "default": "celsius",
+      "default": ""
+    },
+    {
+      "key": "local_password",
+      "type": "secret",
+      "label": {
+        "en": "Local web interface password",
+        "fr": "Mot de passe de l'interface web locale",
+        "de": "Passwort der lokalen Weboberfläche",
+        "es": "Contraseña de la interfaz web local"
+      },
+      "description": {
+        "en": "Energy, Solar and Pro only. Empty: the factory password (admin).",
+        "fr": "Energy, Solar et Pro seulement. Vide : le mot de passe d'usine (admin).",
+        "de": "Nur Energy, Solar und Pro. Leer: das Werkspasswort (admin).",
+        "es": "Solo Energy, Solar y Pro. Vacío: la contraseña de fábrica (admin)."
+      },
+      "required": false
+    },
+    {
+      "key": "cloud",
+      "type": "section",
+      "label": {
+        "en": "Smappee cloud (optional)",
+        "fr": "Cloud Smappee (facultatif)",
+        "de": "Smappee-Cloud (optional)",
+        "es": "Nube Smappee (opcional)"
+      },
+      "description": {
+        "en": "For a monitor not reachable on your network, and for the plugs of the cloud account. Ask Smappee support for an API client id and secret, then type them with your Smappee account. Read every 5 minutes.",
+        "fr": "Pour un boîtier injoignable sur votre réseau, et pour les prises du compte cloud. Demandez au support Smappee un identifiant et un secret d'API, puis saisissez-les avec votre compte Smappee. Lu toutes les 5 minutes.",
+        "de": "Für ein Messgerät, das in deinem Netz nicht erreichbar ist, und für die Steckdosen des Cloud-Kontos. Frag den Smappee-Support nach einer API-Client-ID und einem Secret und gib sie mit deinem Smappee-Konto ein. Alle 5 Minuten gelesen.",
+        "es": "Para un monitor no accesible en su red, y para los enchufes de la cuenta en la nube. Pida al soporte de Smappee un identificador y un secreto de API, e introdúzcalos con su cuenta Smappee. Leído cada 5 minutos."
+      }
+    },
+    {
+      "key": "cloud_client_id",
+      "type": "string",
+      "label": {
+        "en": "API client id",
+        "fr": "Identifiant client de l'API",
+        "de": "API-Client-ID",
+        "es": "Identificador de cliente de la API"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "cloud_client_secret",
+      "type": "secret",
+      "label": {
+        "en": "API client secret",
+        "fr": "Secret client de l'API",
+        "de": "API-Client-Secret",
+        "es": "Secreto de cliente de la API"
+      },
+      "required": false
+    },
+    {
+      "key": "cloud_username",
+      "type": "string",
+      "label": {
+        "en": "Smappee account user name",
+        "fr": "Nom d'utilisateur du compte Smappee",
+        "de": "Benutzername des Smappee-Kontos",
+        "es": "Usuario de la cuenta Smappee"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "cloud_password",
+      "type": "secret",
+      "label": {
+        "en": "Smappee account password",
+        "fr": "Mot de passe du compte Smappee",
+        "de": "Passwort des Smappee-Kontos",
+        "es": "Contraseña de la cuenta Smappee"
+      },
+      "required": false
+    },
+    {
+      "key": "options",
+      "type": "section",
+      "label": {
+        "en": "Options",
+        "fr": "Options",
+        "de": "Optionen",
+        "es": "Opciones"
+      }
+    },
+    {
+      "key": "poll_interval",
+      "type": "select",
+      "label": {
+        "en": "Local refresh interval",
+        "fr": "Rafraîchissement local",
+        "de": "Lokales Aktualisierungsintervall",
+        "es": "Intervalo de actualización local"
+      },
+      "description": {
+        "en": "How often the local readings are sent to Gladys.",
+        "fr": "Fréquence d'envoi des mesures locales à Gladys.",
+        "de": "Wie oft die lokalen Messwerte an Gladys gesendet werden.",
+        "es": "Frecuencia de envío de las mediciones locales a Gladys."
+      },
+      "required": true,
+      "default": "10",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "5",
+          "label": {
+            "en": "5 seconds",
+            "fr": "5 secondes",
+            "de": "5 Sekunden",
+            "es": "5 segundos"
+          }
+        },
+        {
+          "value": "10",
+          "label": {
+            "en": "10 seconds",
+            "fr": "10 secondes",
+            "de": "10 Sekunden",
+            "es": "10 segundos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "60 seconds",
+            "fr": "60 secondes",
+            "de": "60 Sekunden",
+            "es": "60 segundos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "controls",
+      "type": "boolean",
+      "label": {
+        "en": "Control the Smappee plugs and switches",
+        "fr": "Commander les prises et interrupteurs Smappee",
+        "de": "Smappee-Steckdosen und -Schalter steuern",
+        "es": "Controlar los enchufes e interruptores Smappee"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Off: they are shown, read only.",
+        "fr": "Désactivé : ils sont affichés, en lecture seule.",
+        "de": "Aus: nur angezeigt, nicht steuerbar.",
+        "es": "Desactivado: se muestran, solo lectura."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": true
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the device names",
+        "fr": "Langue des noms d'appareils",
+        "de": "Sprache der Gerätenamen",
+        "es": "Idioma de los nombres de dispositivos"
+      },
+      "description": {
+        "en": "Used when a device is added to Gladys.",
+        "fr": "Utilisée quand un appareil est ajouté à Gladys.",
+        "de": "Wird verwendet, wenn ein Gerät zu Gladys hinzugefügt wird.",
+        "es": "Se usa cuando se añade un dispositivo a Gladys."
+      },
+      "required": true,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "search",
+      "label": {
+        "en": "Search for Smappee monitors",
+        "fr": "Rechercher les boîtiers Smappee",
+        "de": "Nach Smappee-Messgeräten suchen",
+        "es": "Buscar monitores Smappee"
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "monitor_offline",
+      "label": {
+        "en": "A Smappee monitor goes offline",
+        "fr": "Un Smappee passe hors ligne",
+        "de": "Ein Smappee geht offline",
+        "es": "Un Smappee se desconecta"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "The monitor stops answering (local) or stops sending data (cloud, 30 minutes).",
+        "fr": "Le boîtier ne répond plus (local) ou n'envoie plus de données (cloud, 30 minutes).",
+        "de": "Das Messgerät antwortet nicht mehr (lokal) oder sendet keine Daten mehr (Cloud, 30 Minuten).",
+        "es": "El monitor deja de responder (local) o de enviar datos (nube, 30 minutos)."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "required": false,
+          "label": {
+            "en": "Smappee monitor",
+            "fr": "Boîtier Smappee",
+            "de": "Smappee-Messgerät",
+            "es": "Monitor Smappee"
+          },
+          "description": {
+            "en": "Leave empty for any Smappee monitor.",
+            "fr": "Laisser vide pour n'importe quel boîtier Smappee.",
+            "de": "Leer lassen für ein beliebiges Smappee-Messgerät.",
+            "es": "Déjelo vacío para cualquier monitor Smappee."
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Monitor name",
+            "fr": "Nom du boîtier",
+            "de": "Name des Messgeräts",
+            "es": "Nombre del monitor"
+          }
         }
       ]
-    }
-  ],
-  "scene_actions": [
+    },
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "monitor_online",
+      "label": {
+        "en": "A Smappee monitor is back online",
+        "fr": "Un Smappee est de nouveau en ligne",
+        "de": "Ein Smappee ist wieder online",
+        "es": "Un Smappee vuelve a estar en línea"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "The monitor answers again after being offline.",
+        "fr": "Le boîtier répond de nouveau après une coupure.",
+        "de": "Das Messgerät antwortet nach einem Ausfall wieder.",
+        "es": "El monitor vuelve a responder tras una desconexión."
+      },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "required": false,
+          "label": {
+            "en": "Smappee monitor",
+            "fr": "Boîtier Smappee",
+            "de": "Smappee-Messgerät",
+            "es": "Monitor Smappee"
+          },
+          "description": {
+            "en": "Leave empty for any Smappee monitor.",
+            "fr": "Laisser vide pour n'importe quel boîtier Smappee.",
+            "de": "Leer lassen für ein beliebiges Smappee-Messgerät.",
+            "es": "Déjelo vacío para cualquier monitor Smappee."
+          }
         }
       ],
-      "outputs": [
+      "variables": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "name",
+          "type": "string",
+          "label": {
+            "en": "Monitor name",
+            "fr": "Nom du boîtier",
+            "de": "Name des Messgeräts",
+            "es": "Nombre del monitor"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "energy_flow",
+      "label": {
+        "en": "Smappee energy flow",
+        "fr": "Flux d'énergie Smappee",
+        "de": "Smappee-Energiefluss",
+        "es": "Flujo de energía Smappee"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Home use, solar, grid exchange and self-use of a Smappee site.",
+        "fr": "Consommation, solaire, échanges réseau et autoconsommation d'un site Smappee.",
+        "de": "Verbrauch, Solar, Netzaustausch und Eigenverbrauch eines Smappee-Standorts.",
+        "es": "Consumo, solar, intercambio con la red y autoconsumo de un sitio Smappee."
+      },
+      "icon": "zap",
+      "settings": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Smappee monitor",
+            "fr": "Boîtier Smappee",
+            "de": "Smappee-Messgerät",
+            "es": "Monitor Smappee"
+          },
+          "description": {
+            "en": "Empty: the first monitor found.",
+            "fr": "Vide : le premier boîtier trouvé.",
+            "de": "Leer: das erste gefundene Messgerät.",
+            "es": "Vacío: el primer monitor encontrado."
+          }
+        }
+      ]
     }
   ]
 }

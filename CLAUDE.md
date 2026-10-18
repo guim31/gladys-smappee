@@ -5,7 +5,8 @@ contributors.
 
 ## What this is
 
-A Gladys Assistant **external integration**: a Node.js service (Node 22+, ESM,
+A Gladys Assistant **external integration** for the Smappee energy monitors
+(local web API, local MQTT broker, cloud API): a Node.js service (Node 22+, ESM,
 no build step) that runs in its own sandboxed Docker container and talks to
 Gladys through
 [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/integration-sdk-js),
@@ -31,16 +32,24 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          SDK wiring only (registerHandlers + shutdown)
+src/app.js                        every SDK handler, wired to the hub (the tests use it too)
+src/hub.js                        SmappeeHub: local HTTP and MQTT, cloud, states, commands, triggers
+src/devices.js                    monitor / sub-meter / actuator -> Gladys device: features, names, values
+src/energy.js                     energy indexes from powers (trapezoids, gaps not filled)
+src/smappee/http.js               local web API client (POST /gateway/apipublic/<command>, logon)
+src/smappee/mqtt.js               minimal MQTT 3.1.1 client (from gladys-bambulab)
+src/smappee/cloud.js              cloud API v3 client (OAuth2 password grant, refresh)
+src/smappee/model.js              meaning of the answers (pysmappee): models, channels, messages
+src/widgets.js                    dashboard widget handler (manifest `widgets`)
+src/texts.js                      connection status, search report, errors, four languages
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/store.js                      /data/smappee-state.json (records, indexes; atomic writes, mode 600)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (en and fr mandatory)
+test/                             node --test, against the SDK's fake Gladys and tools/fake-smappee.mjs
+test/fixtures/smappee/            answers and messages in the shapes of pysmappee and the official API
+tools/fake-smappee.mjs            simulated Smappee Solar (HTTP), Genius (MQTT) and cloud (tests, Docker)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +79,10 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** is in four languages (English, French, German with
+  "du", Spanish with "usted"): manifest texts, action and widget messages,
+  feature names, and `docs/{en,fr,de,es}.md` with the same sections.
+  `test/i18n.test.js` checks them.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +244,57 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Smappee (gladys-smappee)
+
+**Accès** (références : pysmappee, Apache-2.0, et l'intégration `smappee` de Home Assistant)
+
+- **API web locale** (Energy `10…`, Solar `11…`, Pro/Plus `2…`) : `POST
+http://<boîtier>/gateway/apipublic/<commande>`, corps texte brut (`load`, `loadInstantaneous`, le
+  mot de passe pour `logon`). Sans session : `{"error":"Error not authenticated. Use Logon first!"}`
+  → `logon` puis on rejoue (une fois). Numéro de série : `advancedConfigPublic`, clé `mdnsHostName`
+  (`Smappee1006000212`). Puissances : `instantaneous`, clés `phase<N>ActivePower` en **milliwatts**
+  (chaînes). Canaux conso/production : Solar par `configPublic` (`emeterConfiguration` 0, 4, 11, 16,
+  17), Pro/Plus par `channelsConfigPublic` (`inputChannels`), Energy : conso sur 0-2, pas de solaire.
+  Prises : `commandControlPublic` (`type` 2 = Comfort Plug, 3 = Switch, `relayStatus`), commande
+  `control,{"controllableNodeId":"<id>","action":"ON"}`. Réponse exacte d'un mauvais mot de passe
+  inconnue : tout objet avec `error` est un refus.
+- **MQTT local** (Infinity, Genius `50…`, Connect `51…`) : port 1883, sans authentification,
+  abonnement `servicelocation/#`. `config` (numéro de série, UUID), `channelConfigV2` (mesures :
+  CONSUMPTION/GRID, PRODUCTION/GRID = solaire, CONSUMPTION/SUBMETER = sous-compteurs regroupés par
+  nom, identifiés par leur plus petit `publishIndex`), `homeControlConfig` (Switch si série `4006…`,
+  Comfort Plug), `realtime` ~1/s (`totalPower` = consommation, `channelPowers[].power` en W,
+  `current` en dixièmes d'A, `voltages[].voltage`), `plug/<id>/state` `{"value":"ON"}`, commande en
+  publiant `plug/<id>/setstate`. Le faux broker envoie la config à l'abonnement (comme des messages
+  retenus) : un vrai boîtier peut tarder (pysmappee attend jusqu'à 60 s) ; avant `config`, les
+  messages de configuration sont gardés et rejoués.
+- **Cloud** (`https://app1pub.smappee.net/dev/v3`) : `POST oauth2/token` en `grant_type=password`
+  (client id/secret donnés par le support Smappee) puis `refresh_token` ; `servicelocation`,
+  `…/meteringconfiguration`, `…/consumption?aggregation=1&from&to` (blocs de 5 min en Wh),
+  `…/actuator/<id>/state` (texte `ON_ON`), `POST …/actuator/<id>/ON_ON`. Sondé le 18/10/2026 : un
+  client inconnu répond **400 `{"error":"ClientId not found"}`**, un jeton faux **401 en HTML**.
+
+**Choix de conception**
+
+- Un boîtier = un appareil `monitor:<série>`, quel que soit l'accès : le local prime, un boîtier lu
+  en local n'est jamais relu par le cloud (ni ses prises). Sous-compteurs `submeter:<série>-<canal>`,
+  prises `actuator:<série>-<nœud>`.
+- **Index** : les API locales ne donnent pas de compteur. Intégration puissance × temps (trapèzes, en
+  kWh, `src/energy.js`) à chaque lecture, trou de plus de 3 min non comblé, conservée dans `/data`
+  (écrite au plus une fois par minute et à l'arrêt). Cloud : premier passage = point de départ (rien
+  d'ajouté), puis somme des blocs de 5 min. Les index partent de 0.
+- Consommation de la maison en `energy-sensor/power|index` (coût calculé dessus par l'onglet
+  énergie, y compris l'autoconsommation solaire : question ouverte) ; solaire en
+  `energy-production-sensor` ; soutirage/injection déduits (conso − production) en `grid-sensor`.
+- MQTT : énergie intégrée à chaque message (~1/s), états publiés au rythme `poll_interval`. Boîtier
+  hors ligne : 3 lectures HTTP ratées, 60 s sans message MQTT, ou 30 min sans bloc cloud.
+- Comfort Plug (433 MHz, sans retour) : `has_feedback: false`. `controls` désactivé : `read_only`.
+- Pas de découverte mDNS : HA passe par `_ssh._tcp` filtré sur le nom `smappee…`, trop large pour un
+  contrat de découverte affiché à l'installation.
+- Pas d'action de scène : l'action standard « contrôler un appareil » suffit pour les prises ; la
+  forte consommation passe par le déclencheur standard sur « Consommation ».
+
+**Vérification Docker** : faux Smappee (`node tools/fake-smappee.mjs --serve` : HTTP 80, MQTT 1883,
+cloud 8080) dans un conteneur `gladys-test-smappee-fake`, l'intégration dans le bac à sable
+(`--cap-drop ALL --read-only --memory 256m …`) avec `tools/docker-check.mjs`, réseau
+`gladys-test-smappee`. Tout supprimer ensuite.

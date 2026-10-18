@@ -1,0 +1,64 @@
+{
+  "_source": "Messages of the local MQTT broker of a Smappee Genius (port 1883), with the fields pysmappee reads (mqtt.py SmappeeLocalMqtt, servicelocation.py _update_realtime_data). Serial number and UUID invented. Channel current in tenths of an ampere.",
+  "uuid": "00000000-aaaa-4bbb-8ccc-000000000101",
+  "config": {
+    "serialNumber": "5010000101",
+    "serviceLocationId": 10101,
+    "serviceLocationUuid": "00000000-aaaa-4bbb-8ccc-000000000101",
+    "firmwareVersion": "1.0.12",
+    "timeZone": "Europe/Brussels"
+  },
+  "channelConfigV2": {
+    "dataProcessingSpecification": {
+      "phaseType": "THREE_PHASE_STAR_WITH_NEUTRAL",
+      "measurements": [
+        { "name": "Grid", "flow": "CONSUMPTION", "connectionType": "GRID", "publishIndex": 0 },
+        { "name": "Grid", "flow": "CONSUMPTION", "connectionType": "GRID", "publishIndex": 1 },
+        { "name": "Grid", "flow": "CONSUMPTION", "connectionType": "GRID", "publishIndex": 2 },
+        { "name": "Solar", "flow": "PRODUCTION", "connectionType": "GRID", "publishIndex": 3 },
+        {
+          "name": "Pompe à chaleur",
+          "flow": "CONSUMPTION",
+          "connectionType": "SUBMETER",
+          "publishIndex": 4
+        },
+        {
+          "name": "Pompe à chaleur",
+          "flow": "CONSUMPTION",
+          "connectionType": "SUBMETER",
+          "publishIndex": 5
+        },
+        { "name": "Four", "flow": "CONSUMPTION", "connectionType": "SUBMETER", "publishIndex": 6 }
+      ]
+    }
+  },
+  "homeControlConfig": {
+    "switchActuators": [
+      { "nodeId": 3, "name": "Boiler", "serialNumber": "4006000103" },
+      { "nodeId": 8, "name": "Not a Smappee Switch", "serialNumber": "9999000108" }
+    ],
+    "smartplugActuators": [{ "nodeId": 4, "name": "Lampe salon" }]
+  },
+  "realtime": {
+    "totalPower": 2450,
+    "totalReactivePower": 310,
+    "totalExportEnergy": 0,
+    "totalImportEnergy": 0,
+    "monitorStatus": 0,
+    "utcTimeStamp": 1760000000000,
+    "channelPowers": [
+      { "ctInput": 0, "publishIndex": 0, "power": 700, "current": 31, "phaseId": 0 },
+      { "ctInput": 1, "publishIndex": 1, "power": 500, "current": 22, "phaseId": 1 },
+      { "ctInput": 2, "publishIndex": 2, "power": 250, "current": 11, "phaseId": 2 },
+      { "ctInput": 3, "publishIndex": 3, "power": -1000, "current": 44, "phaseId": 0 },
+      { "ctInput": 4, "publishIndex": 4, "power": 600, "current": 26, "phaseId": 0 },
+      { "ctInput": 5, "publishIndex": 5, "power": 400, "current": 17, "phaseId": 1 },
+      { "ctInput": 6, "publishIndex": 6, "power": 0, "current": 0, "phaseId": 2 }
+    ],
+    "voltages": [
+      { "voltage": 231, "phaseId": 0 },
+      { "voltage": 229, "phaseId": 1 },
+      { "voltage": 232, "phaseId": 2 }
+    ]
+  }
+}

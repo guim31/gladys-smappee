@@ -1,0 +1,55 @@
+{
+  "_source": "Answers of the Smappee cloud API v3 (app1pub.smappee.net/dev/v3) in the shapes pysmappee reads (api.py, servicelocation.py) and the official API documentation. `tokenRefused` is the real answer to an unknown client id (probed on 2026-10-18). Ids and serial numbers invented.",
+  "token": {
+    "access_token": "test-access-token",
+    "refresh_token": "test-refresh-token",
+    "expires_in": 7200
+  },
+  "tokenRefused": { "error": "ClientId not found" },
+  "serviceLocations": {
+    "appName": "Gladys",
+    "serviceLocations": [
+      {
+        "serviceLocationId": 20202,
+        "serviceLocationUuid": "00000000-aaaa-4bbb-8ccc-000000020202",
+        "name": "Maison",
+        "deviceSerialNumber": "1005000202"
+      },
+      { "serviceLocationId": 30303, "name": "Deactivated site" }
+    ]
+  },
+  "meteringConfiguration": {
+    "serviceLocationId": 20202,
+    "serviceLocationUuid": "00000000-aaaa-4bbb-8ccc-000000020202",
+    "name": "Maison",
+    "lat": 50.85,
+    "lon": 4.35,
+    "timezone": "Europe/Brussels",
+    "appliances": [],
+    "actuators": [
+      {
+        "id": 1,
+        "name": "Garage",
+        "type": "COMFORT_PLUG",
+        "states": [
+          { "id": "ON_ON", "name": "on" },
+          { "id": "OFF_OFF", "name": "off" }
+        ]
+      },
+      { "id": 5, "name": "Output module", "type": "INFINITY_OUTPUT_MODULE", "states": [] }
+    ],
+    "sensors": [],
+    "measurements": [
+      { "id": 0, "name": "Grid", "type": "GRID", "channels": [] },
+      { "id": 1, "name": "Solar", "type": "PRODUCTION", "channels": [] }
+    ]
+  },
+  "consumption": {
+    "serviceLocationId": 20202,
+    "consumptions": [
+      { "timestamp": 1760000000000, "consumption": 100, "solar": 40, "alwaysOn": 12 },
+      { "timestamp": 1760000300000, "consumption": 150, "solar": 50, "alwaysOn": 12 }
+    ]
+  },
+  "actuatorState": "ON_ON"
+}
