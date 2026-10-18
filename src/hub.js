@@ -360,7 +360,11 @@ export class SmappeeHub {
       record.access = access;
       record.address = address;
     }
-    this.setKeys(record, monitorKeys({ solar, phases }));
+    // Solar unknown (MQTT before its channel configuration): no feature yet,
+    // or a monitor would get both the solar and the non-solar features.
+    if (solar !== null) {
+      this.setKeys(record, monitorKeys({ solar, phases }));
+    }
     if (`${record.access}|${record.address}` !== before) {
       this.devicesDirty = true;
     }
@@ -575,7 +579,7 @@ export class SmappeeHub {
         this.adoptMonitor(config.serial, {
           access: 'mqtt',
           address: entry.address,
-          solar: (entry.channels?.solar.length ?? 0) > 0,
+          solar: entry.channels ? entry.channels.solar.length > 0 : null,
         });
         if (!known) {
           logger.info(`Smappee ${config.serial} found at ${entry.address} (local MQTT)`);

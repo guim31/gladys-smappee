@@ -16,9 +16,10 @@ the notes of the version's GitHub Release.
   the Smappee Energy, Solar and Pro/Plus, the local MQTT broker of the
   Infinity, Genius and Connect, and the Smappee cloud (optional, OAuth2 with
   an API client id and secret) for the monitors out of reach.
-- One device per monitor: home consumption (power and index for the energy
-  tab of Gladys 5.2), solar production, grid import and export, phase
-  voltages (MQTT).
+- One device per monitor: consumption, solar production, grid import and
+  export, phase voltages (MQTT). The energy tab of Gladys 5.2 prices what the
+  grid delivers: the home consumption without solar panels, the grid import
+  with them (the home consumption is then shown, not priced).
 - One device per sub-meter (CT clamps of an Infinity / Genius) and per Smappee
   Switch, Comfort Plug or output module, switched on and off from Gladys
   (can be turned off in the configuration).

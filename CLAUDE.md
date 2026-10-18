@@ -283,9 +283,17 @@ http://<boîtier>/gateway/apipublic/<commande>`, corps texte brut (`load`, `load
   kWh, `src/energy.js`) à chaque lecture, trou de plus de 3 min non comblé, conservée dans `/data`
   (écrite au plus une fois par minute et à l'arrêt). Cloud : premier passage = point de départ (rien
   d'ajouté), puis somme des blocs de 5 min. Les index partent de 0.
-- Consommation de la maison en `energy-sensor/power|index` (coût calculé dessus par l'onglet
-  énergie, y compris l'autoconsommation solaire : question ouverte) ; solaire en
-  `energy-production-sensor` ; soutirage/injection déduits (conso − production) en `grid-sensor`.
+- **Ce qui est chiffré** (arbitrage de l'orchestrateur, 18/10/2026) : l'onglet énergie chiffre
+  `energy-sensor/index` (et lit les pointes de `energy-sensor/power`). Sans solaire : consommation de
+  la maison (`power`, `energy`). Avec solaire : soutirage réseau en `energy-sensor/*` (`import-power`,
+  `import-energy`, le compteur facturé), consommation de la maison en `home-output-sensor/*`
+  (`home-power`, `home-energy` : affichée, jamais chiffrée, couple présent dès la 5.1.0), production
+  en `energy-production-sensor`, injection en `grid-sensor/output-*`. Jamais les deux jeux sur un
+  même boîtier : en MQTT, aucune fonctionnalité tant que `channelConfigV2` n'a pas dit s'il y a du
+  solaire (repli sans solaire au premier `realtime`).
+- **Piste** : le `realtime` d'un Genius porterait des compteurs (`totalImportEnergy`,
+  `totalExportEnergy`, `channelPowers[].importEnergy`), que pysmappee ne lit pas. À vérifier sur un vrai
+  boîtier (unité, remise à zéro) : ils remplaceraient l'intégration de la puissance.
 - MQTT : énergie intégrée à chaque message (~1/s), états publiés au rythme `poll_interval`. Boîtier
   hors ligne : 3 lectures HTTP ratées, 60 s sans message MQTT, ou 30 min sans bloc cloud.
 - Cloud en échec : réessai espacé (5, 10, 20 puis 30 min ; identifiants refusés : une fois par

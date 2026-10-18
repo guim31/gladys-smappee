@@ -99,7 +99,7 @@ export function energyFlow(hub, { settings, language = 'en' } = {}) {
       color: net < 0 ? WIDGET_COLORS.SUCCESS : WIDGET_COLORS.WARNING,
     });
   }
-  components.push(tile('power', TEXT.home, 'home'));
+  components.push(tile(solar ? 'home-power' : 'power', TEXT.home, 'home'));
   if (solar) {
     components.push(
       tile('solar-power', TEXT.solar, 'sun', WIDGET_COLORS.SUCCESS),

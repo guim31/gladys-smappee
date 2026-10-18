@@ -60,7 +60,7 @@ Un appareil par boîtier, nommé d'après son modèle et son numéro de série
 - **Consommation** (W) et **Index de consommation** (kWh) : toute la maison ;
 - avec des panneaux solaires : **Production solaire** et **Index de production solaire**,
   **Soutirage réseau** et **Injection réseau** (W), **Index de soutirage** et **Index d'injection**
-  (kWh), déduits de la consommation moins la production ;
+  (kWh), déduits de la consommation moins la production. L'**Index de soutirage** est alors le compteur facturé, et l'**Index de consommation** l'usage de la maison (affiché, non chiffré) ;
 - Infinity, Genius et Connect : **Tension L1** à **Tension L3**.
 
 Par leur API locale, les boîtiers donnent des puissances, pas des compteurs : l'intégration
@@ -82,10 +82,8 @@ Comfort Plug (433 MHz) ne dit jamais son état : Gladys affiche la dernière com
 
 ## Onglet énergie
 
-L'**Index de consommation** d'un boîtier et l'**Index d'énergie** de ses sous-compteurs sont des
-compteurs de consommation pour l'onglet énergie de Gladys 5.2 ; l'**Index de production solaire** est
-un compteur de production. Placez les sous-compteurs sous le boîtier dans les réglages énergie, pour
-ne pas les compter deux fois. Le soutirage et l'injection sont affichés, jamais recomptés.
+L'onglet énergie de Gladys 5.2 chiffre ce que fournit le réseau : l'**Index de consommation** d'un boîtier sans panneaux solaires, l'**Index de soutirage** d'un boîtier avec panneaux solaires (son **Index de consommation**, qui inclut l'énergie solaire consommée sur place, est affiché mais non chiffré). L'**Index d'énergie** des sous-compteurs est aussi un compteur de consommation, et l'**Index de production solaire** un compteur de production. Placez les sous-compteurs sous le boîtier dans les réglages énergie, pour
+ne pas les compter deux fois. L'injection est affichée, jamais recomptée.
 
 ## Widget
 

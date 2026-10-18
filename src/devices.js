@@ -4,12 +4,13 @@
 //
 // Three kinds of Gladys devices, keyed on the serial number of the monitor
 // (the same whether it is read locally or through the cloud):
-//   - `monitor`: the site. Home consumption (`energy-sensor/power` and
-//     `energy-sensor/index`, the couples the Gladys 5.2 energy tab turns into
-//     consumption and cost); with solar panels, the production
-//     (`energy-production-sensor/*`) and the grid exchange deduced from the two
-//     (`grid-sensor/*`, shown, never added up again); the phase voltages read
-//     by the local MQTT broker;
+//   - `monitor`: the site. What the grid delivers is what the energy tab of
+//     Gladys 5.2 turns into consumption and cost (`energy-sensor/power` and
+//     `energy-sensor/index`): the home consumption without solar panels, the
+//     grid import with them. With solar panels, the home consumption goes to
+//     `home-output-sensor/*` (shown, never costed), the production to
+//     `energy-production-sensor/*`, the export to `grid-sensor/output-*`.
+//     Plus the phase voltages read by the local MQTT broker;
 //   - `submeter`: one per sub-circuit (CT clamps) of an Infinity / Genius;
 //   - `actuator`: one per Smappee Switch, Comfort Plug or output module.
 //
@@ -122,15 +123,28 @@ const SPECS = {
       type: TYPES.ENERGY_PRODUCTION_SENSOR.INDEX,
       ...KWH,
     },
-    'import-power': { category: CATEGORIES.GRID_SENSOR, type: TYPES.GRID_SENSOR.INPUT_POWER, ...W },
+    // With solar panels: the grid import is the billed energy, the home use is shown.
+    'import-power': { category: CATEGORIES.ENERGY_SENSOR, type: TYPES.ENERGY_SENSOR.POWER, ...W },
+    'home-power': {
+      category: CATEGORIES.HOME_OUTPUT_SENSOR,
+      type: TYPES.HOME_OUTPUT_SENSOR.POWER,
+      ...W,
+      name: 'power',
+    },
+    'home-energy': {
+      category: CATEGORIES.HOME_OUTPUT_SENSOR,
+      type: TYPES.HOME_OUTPUT_SENSOR.INDEX,
+      ...KWH,
+      name: 'energy',
+    },
     'export-power': {
       category: CATEGORIES.GRID_SENSOR,
       type: TYPES.GRID_SENSOR.OUTPUT_POWER,
       ...W,
     },
     'import-energy': {
-      category: CATEGORIES.GRID_SENSOR,
-      type: TYPES.GRID_SENSOR.INPUT_INDEX,
+      category: CATEGORIES.ENERGY_SENSOR,
+      type: TYPES.ENERGY_SENSOR.INDEX,
       ...KWH,
     },
     'export-energy': {
@@ -191,17 +205,19 @@ export function specOf(kind, key) {
 
 /** The keys of a monitor, in display order. */
 export function monitorKeys({ solar, phases = 0 }) {
-  const keys = ['power', 'energy'];
-  if (solar) {
-    keys.push(
-      'solar-power',
-      'solar-energy',
-      'import-power',
-      'export-power',
-      'import-energy',
-      'export-energy',
-    );
-  }
+  // Never both sets on one monitor: the two energy-sensor indexes would be costed twice.
+  const keys = solar
+    ? [
+        'import-power',
+        'import-energy',
+        'home-power',
+        'home-energy',
+        'solar-power',
+        'solar-energy',
+        'export-power',
+        'export-energy',
+      ]
+    : ['power', 'energy'];
   for (let n = 1; n <= Math.min(phases, 3); n += 1) {
     keys.push(`voltage-l${n}`);
   }
@@ -320,9 +336,10 @@ export function deviceValues(record) {
     case 'monitor': {
       const consumption = num(live.consumption);
       const production = num(live.production);
-      set('power', consumption === null ? null : Math.max(consumption, 0));
-      set('energy', energy.consumption);
+      const home = consumption === null ? null : Math.max(consumption, 0);
       if (record.keys.includes('solar-power')) {
+        set('home-power', home);
+        set('home-energy', energy.consumption);
         set('solar-power', production);
         set('solar-energy', energy.production);
         if (consumption !== null && production !== null) {
@@ -332,6 +349,9 @@ export function deviceValues(record) {
         }
         set('import-energy', energy.import);
         set('export-energy', energy.export);
+      } else {
+        set('power', home);
+        set('energy', energy.consumption);
       }
       (live.voltages ?? []).forEach((voltage, index) => set(`voltage-l${index + 1}`, voltage));
       break;

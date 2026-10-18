@@ -42,7 +42,7 @@ test('a solar site: gauge, live tiles bound to the features, self-use', async (t
   }
   assert.equal(
     widget.components.find((c) => c.label === 'Haus').device_feature,
-    ids(world.gladys, 'monitor', HTTP_SERIAL).feature('power'),
+    ids(world.gladys, 'monitor', HTTP_SERIAL).feature('home-power'),
   );
   const status = widget.components.find((c) => c.type === 'status');
   // 1400 W produced, nothing exported: all used at home.

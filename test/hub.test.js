@@ -44,11 +44,23 @@ test('HTTP: a Smappee Solar, its powers, grid exchange, plug and switch', async 
   await createAll(world);
   const monitor = ids(world.gladys, 'monitor', HTTP_SERIAL);
   // emeterConfiguration 17: consumption on CT 0, production on CT 1.
-  assert.equal(world.fake.lastState(monitor.feature('power')), 1850);
+  assert.equal(world.fake.lastState(monitor.feature('home-power')), 1850);
   assert.equal(world.fake.lastState(monitor.feature('solar-power')), 1400);
   assert.equal(world.fake.lastState(monitor.feature('import-power')), 450);
   assert.equal(world.fake.lastState(monitor.feature('export-power')), 0);
-  assert.equal(world.fake.lastState(monitor.feature('energy')), 0);
+  assert.equal(world.fake.lastState(monitor.feature('import-energy')), 0);
+  assert.equal(world.fake.lastState(monitor.feature('energy')), undefined);
+  // The grid import is the costed couple; the home use is shown only.
+  const features = device(world, 'monitor', HTTP_SERIAL).features;
+  const costed = features.filter((f) => f.category === 'energy-sensor' && f.type === 'index');
+  assert.deepEqual(
+    costed.map((f) => f.external_id),
+    [monitor.feature('import-energy')],
+  );
+  assert.equal(
+    features.find((f) => f.external_id === monitor.feature('home-energy')).category,
+    'home-output-sensor',
+  );
   assert.equal(device(world, 'monitor', HTTP_SERIAL).name, `Smappee Solar ${HTTP_SERIAL}`);
 
   // Type 2 is a plug, type 3 a switch; type 7 is not offered.
@@ -90,7 +102,7 @@ test('HTTP: the session expires, the hub logs on again by itself', async (t) => 
   world.http.setPowers(900, 0);
   await world.hub.pollLocal();
   const monitor = ids(world.gladys, 'monitor', HTTP_SERIAL);
-  assert.equal(world.fake.lastState(monitor.feature('power')), 900);
+  assert.equal(world.fake.lastState(monitor.feature('home-power')), 900);
   assert.equal(world.http.requests.filter((request) => request.command === 'logon').length, 2);
 });
 
@@ -140,7 +152,7 @@ test('MQTT: a Genius, its sub-meters, voltages, switch and plug', async (t) => {
   await world.hub.pollLocal();
   await createAll(world);
   const monitor = ids(world.gladys, 'monitor', MQTT_SERIAL);
-  assert.equal(world.fake.lastState(monitor.feature('power')), 2450);
+  assert.equal(world.fake.lastState(monitor.feature('home-power')), 2450);
   assert.equal(world.fake.lastState(monitor.feature('solar-power')), 1000);
   assert.equal(world.fake.lastState(monitor.feature('import-power')), 1450);
   assert.equal(world.fake.lastState(monitor.feature('voltage-l3')), 232);
@@ -215,9 +227,9 @@ test('cloud: a site, its 5-minute blocks, its Comfort Plug', async (t) => {
   await createAll(world);
   const monitor = ids(world.gladys, 'monitor', CLOUD_SERIAL);
   // The last block: 150 Wh in 5 minutes = 1800 W; the first read sets the start.
-  assert.equal(world.fake.lastState(monitor.feature('power')), 1800);
+  assert.equal(world.fake.lastState(monitor.feature('home-power')), 1800);
   assert.equal(world.fake.lastState(monitor.feature('solar-power')), 600);
-  assert.equal(world.fake.lastState(monitor.feature('energy')), 0);
+  assert.equal(world.fake.lastState(monitor.feature('home-energy')), 0);
   assert.ok(
     world.fake.transports.some(
       (entry) => entry.device_external_id === monitor.device && entry.transport === 'cloud',
@@ -297,7 +309,7 @@ test('the hub timer publishes by itself, without any poll from Gladys', async (t
   world.hub.timersEnabled = true;
   world.hub.timings.pollMs = 30;
   world.hub.startTimers();
-  const feature = ids(world.gladys, 'monitor', HTTP_SERIAL).feature('power');
+  const feature = ids(world.gladys, 'monitor', HTTP_SERIAL).feature('home-power');
   await until(() => world.fake.lastState(feature) === 1234);
 });
 
@@ -354,7 +366,7 @@ test('cloud: a plug answering 404 does not stop the readings', async (t) => {
   await world.hub.pollCloud();
   assert.equal(world.hub.cloudStatus, 'ok');
   const monitor = ids(world.gladys, 'monitor', CLOUD_SERIAL);
-  assert.equal(world.fake.lastState(monitor.feature('power')), 3600);
+  assert.equal(world.fake.lastState(monitor.feature('home-power')), 3600);
 });
 
 test('a removed address: the monitor is no longer read locally', async (t) => {

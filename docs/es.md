@@ -59,8 +59,7 @@ Un dispositivo por monitor, con el nombre de su modelo y su número de serie
 
 - **Consumo** (W) e **Índice de consumo** (kWh): toda la casa;
 - con paneles solares: **Producción solar** e **Índice de producción solar**, **Importación de
-  red** y **Exportación a red** (W), **Índice de importación** e **Índice de exportación** (kWh),
-  deducidos del consumo menos la producción;
+  red** y **Exportación a red** (W), **Índice de importación** e **Índice de exportación** (kWh), deducidos del consumo menos la producción. El **Índice de importación** es entonces el contador facturado, y el **Índice de consumo** el uso de la casa (mostrado, sin coste);
 - Infinity, Genius y Connect: **Tensión L1** a **Tensión L3**.
 
 Por su API local, los monitores dan potencias, no contadores: la integración suma potencia × tiempo
@@ -82,10 +81,8 @@ Comfort Plug (433 MHz) nunca indica su estado: Gladys muestra la última orden e
 
 ## Pestaña de energía
 
-El **Índice de consumo** de un monitor y el **Índice de energía** de sus submedidores son contadores
-de consumo para la pestaña de energía de Gladys 5.2; el **Índice de producción solar** es un
-contador de producción. Coloque los submedidores bajo el monitor en los ajustes de energía, para no
-contarlos dos veces. La importación y la exportación se muestran, nunca se vuelven a sumar.
+La pestaña de energía de Gladys 5.2 calcula el coste de lo que entrega la red: el **Índice de consumo** de un monitor sin paneles solares, el **Índice de importación** de un monitor con paneles solares (su **Índice de consumo**, que incluye la energía solar usada en casa, se muestra pero sin coste). El **Índice de energía** de los submedidores también es un contador de consumo, y el **Índice de producción solar** un contador de producción. Coloque los submedidores bajo el monitor en los ajustes de energía, para no
+contarlos dos veces. La exportación se muestra, nunca se vuelve a sumar.
 
 ## Widget
 

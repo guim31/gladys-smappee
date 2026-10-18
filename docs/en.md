@@ -56,9 +56,7 @@ Then open the **Discovery** tab and add the devices you want.
 One device per monitor, named after its model and serial number (`Smappee Genius 5010000101`):
 
 - **Consumption** (W) and **Consumption index** (kWh): the whole home;
-- with solar panels: **Solar production** and **Solar production index**, **Grid import** and
-  **Grid export** (W), **Grid import index** and **Grid export index** (kWh), deduced from
-  consumption minus production;
+- with solar panels: **Solar production** and **Solar production index**, **Grid import** and **Grid export** (W), **Grid import index** and **Grid export index** (kWh), deduced from consumption minus production. The **Grid import index** is then the billed counter, and **Consumption index** the home use (shown, not priced);
 - Infinity, Genius and Connect: **Voltage L1** to **Voltage L3**.
 
 The monitors give powers, not counters, over their local API: the integration adds up power ×
@@ -80,10 +78,9 @@ its state: Gladys shows the last command sent.
 
 ## Energy tab
 
-The **Consumption index** of a monitor and the **Energy index** of its sub-meters are consumption
-counters for the energy tab of Gladys 5.2; the **Solar production index** is a production counter.
+The energy tab of Gladys 5.2 prices what the grid delivers: the **Consumption index** of a monitor without solar panels, the **Grid import index** of a monitor with solar panels (its **Consumption index**, which includes the solar energy used at home, is shown but not priced). The **Energy index** of the sub-meters is a consumption counter too, and the **Solar production index** a production counter.
 Set the sub-meters as children of the monitor in the energy settings, so they are not counted twice.
-The grid import and export are shown, never added up again.
+The grid export is shown, never added up again.
 
 ## Widget
 

@@ -58,8 +58,7 @@ Ein Gerät pro Messgerät, benannt nach Modell und Seriennummer (`Smappee Genius
 
 - **Verbrauch** (W) und **Verbrauchszähler** (kWh): das ganze Haus;
 - mit Solarmodulen: **Solarproduktion** und **Solarproduktionszähler**, **Netzbezug** und
-  **Netzeinspeisung** (W), **Bezugszähler** und **Einspeisezähler** (kWh), berechnet aus Verbrauch
-  minus Produktion;
+  **Netzeinspeisung** (W), **Bezugszähler** und **Einspeisezähler** (kWh), berechnet aus Verbrauch minus Produktion. Der **Bezugszähler** ist dann der abgerechnete Zähler, der **Verbrauchszähler** der Hausverbrauch (angezeigt, nicht bepreist);
 - Infinity, Genius und Connect: **Spannung L1** bis **Spannung L3**.
 
 Über ihre lokale API liefern die Messgeräte Leistungen, keine Zähler: Die Integration addiert
@@ -81,10 +80,8 @@ meldet ihren Zustand nie: Gladys zeigt den zuletzt gesendeten Befehl.
 
 ## Energie-Tab
 
-Der **Verbrauchszähler** eines Messgeräts und der **Energiezähler** seiner Unterzähler sind
-Verbrauchszähler für den Energie-Tab von Gladys 5.2; der **Solarproduktionszähler** ist ein
-Produktionszähler. Ordne die Unterzähler in den Energie-Einstellungen dem Messgerät unter, damit sie
-nicht doppelt gezählt werden. Netzbezug und Einspeisung werden angezeigt, nie noch einmal addiert.
+Der Energie-Tab von Gladys 5.2 bepreist, was das Netz liefert: den **Verbrauchszähler** eines Messgeräts ohne Solarmodule, den **Bezugszähler** eines Messgeräts mit Solarmodulen (sein **Verbrauchszähler**, der den selbst genutzten Solarstrom enthält, wird angezeigt, aber nicht bepreist). Der **Energiezähler** der Unterzähler ist ebenfalls ein Verbrauchszähler, der **Solarproduktionszähler** ein Produktionszähler. Ordne die Unterzähler in den Energie-Einstellungen dem Messgerät unter, damit sie
+nicht doppelt gezählt werden. Die Einspeisung wird angezeigt, nie noch einmal addiert.
 
 ## Widget
 
