@@ -8,8 +8,8 @@
     "de": "Smappee-Energiemonitore: Verbrauch, Solar, Unterzähler und Steckdosen, lokal oder per Cloud.",
     "es": "Monitores de energía Smappee: consumo, solar, submedidores y enchufes, en local o por la nube."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/guim31/gladys-smappee:1.0.0",
+  "version": "1.0.1",
+  "docker_image": "ghcr.io/guim31/gladys-smappee:1.0.1",
   "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/guim31/gladys-smappee/main/cover.png",
   "categories": ["energy"],

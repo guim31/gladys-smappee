@@ -1,6 +1,6 @@
 {
   "name": "gladys-smappee",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Gladys Assistant integration for the Smappee energy monitors: local HTTP API, local MQTT and cloud.",
   "type": "module",
