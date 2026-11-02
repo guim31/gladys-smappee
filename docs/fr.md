@@ -89,7 +89,8 @@ lu en local. Toutes les valeurs sont rafraîchies toutes les 5 minutes.
 
 - **Connecteur** : libre, ou occupé tant qu'un véhicule est branché ;
 - **État de la recharge** : en charge, véhicule branché, en pause par la borne, ou au repos ;
-- **Puissance de charge** (kW) : la moyenne des 5 dernières minutes, pour un boîtier lu par le cloud ;
+- **Puissance de charge** (kW) : la moyenne des 5 dernières minutes, pour un boîtier lu par le cloud,
+  et 0 quand aucune session n'est en cours ;
 - **Énergie de la dernière session** (kWh) et **Durée de la dernière session** : la session en cours,
   sinon la précédente. Pendant une charge, l'énergie est celle mesurée sur la borne, avec quelques
   minutes de retard ;

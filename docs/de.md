@@ -88,7 +88,8 @@ wird. Alle Werte werden alle 5 Minuten aktualisiert.
 
 - **Anschluss**: frei oder belegt, solange ein Fahrzeug angeschlossen ist;
 - **Ladevorgang**: lädt, Fahrzeug angeschlossen, von der Ladestation pausiert oder inaktiv;
-- **Ladeleistung** (kW): der Mittelwert der letzten 5 Minuten, für ein über die Cloud gelesenes Messgerät;
+- **Ladeleistung** (kW): der Mittelwert der letzten 5 Minuten, für ein über die Cloud gelesenes Messgerät,
+  und 0, wenn keine Sitzung läuft;
 - **Energie der letzten Sitzung** (kWh) und **Dauer der letzten Sitzung**: die laufende Sitzung, sonst
   die vorherige. Während des Ladens ist die Energie die an der Ladestation gemessene, einige Minuten
   verzögert;

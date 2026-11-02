@@ -88,7 +88,8 @@ lea en local. Todos los valores se actualizan cada 5 minutos.
 
 - **Conector**: libre, u ocupado mientras haya un vehículo conectado;
 - **Estado de la recarga**: cargando, vehículo conectado, en pausa por el cargador, o en reposo;
-- **Potencia de carga** (kW): la media de los últimos 5 minutos, para un monitor leído por la nube;
+- **Potencia de carga** (kW): la media de los últimos 5 minutos, para un monitor leído por la nube,
+  y 0 cuando no hay ninguna sesión en curso;
 - **Energía de la última sesión** (kWh) y **Duración de la última sesión**: la sesión en curso, si no
   la anterior. Durante una carga, la energía es la medida en el cargador, con unos minutos de retraso;
 - **Energía total cargada** (kWh): el contador del cargador, leído en las sesiones. Cambia al terminar

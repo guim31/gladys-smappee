@@ -29,7 +29,7 @@ import {
   DEVICE_FEATURE_TYPES as TYPES,
   DEVICE_FEATURE_UNITS as UNITS,
 } from '@gladysassistant/integration-sdk';
-import { modelOf } from './smappee/model.js';
+import { CONNECTOR_STATUS, modelOf } from './smappee/model.js';
 
 export const DEVICE_TYPES = {
   monitor: 'monitor',
@@ -464,7 +464,12 @@ export function deviceValues(record) {
       const session = record.session ?? {};
       set('connector-status', session.connector);
       set('charging-state', session.charging);
-      set('charge-power', num(live.power) === null ? null : live.power / 1000);
+      // The blocks come late: after a session stops, they still show it charging for 10 minutes.
+      if (session.connector === CONNECTOR_STATUS.AVAILABLE) {
+        set('charge-power', 0);
+      } else {
+        set('charge-power', num(live.power) === null ? null : live.power / 1000);
+      }
       set('session-energy', session.energy);
       set('session-duration', session.minutes);
       set('total-energy', session.total);
