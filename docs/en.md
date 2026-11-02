@@ -86,7 +86,8 @@ All the values are refreshed every 5 minutes.
 
 - **Connector**: free, or occupied while a vehicle is connected;
 - **Charging state**: charging, vehicle connected, paused by the charger, or idle;
-- **Charging power** (kW): the average of the last 5 minutes, for a monitor read through the cloud;
+- **Charging power** (kW): the average of the last 5 minutes, for a monitor read through the cloud,
+  and 0 when no session is under way;
 - **Last session energy** (kWh) and **Last session duration**: the session under way, else the last
   one. During a charge, the energy is the one measured on the charger, a few minutes late;
 - **Total charged energy** (kWh): the meter of the charger, as read in the sessions. It moves when a

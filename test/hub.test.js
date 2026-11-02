@@ -275,8 +275,8 @@ test('cloud: a charger, its finished session, then a vehicle charging', async (t
   assert.equal(world.fake.lastState(charger.feature('session-energy')), 32.844);
   assert.equal(world.fake.lastState(charger.feature('total-energy')), 852.815);
   assert.equal(world.fake.lastState(charger.feature('session-duration')), 406);
-  // Channel 0 of the last block: 120 Wh in 5 minutes.
-  assert.equal(world.fake.lastState(charger.feature('charge-power')), 1.44);
+  // The last block has 120 Wh on channel 0, but no session is under way.
+  assert.equal(world.fake.lastState(charger.feature('charge-power')), 0);
 
   const start = Math.round((Date.now() - 3600_000) / 1000);
   world.cloud.data.activeSessions = [{ ...world.cloud.data.activeSession, from: start }];
@@ -305,6 +305,8 @@ test('cloud: a charger, its finished session, then a vehicle charging', async (t
   assert.equal(world.fake.lastState(charger.feature('session-energy')), 10);
   assert.equal(world.fake.lastState(charger.feature('total-energy')), 862.794);
   assert.equal(world.fake.lastState(charger.feature('session-duration')), 50);
+  // No new block yet, and the last one still shows 150 Wh: the power falls at once.
+  assert.equal(world.fake.lastState(charger.feature('charge-power')), 0);
 
   // Read-only, whatever Gladys sends.
   const ack = await world.fake.setValue(found, found.features[0], 1);

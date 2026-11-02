@@ -10,6 +10,11 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- The charging power of a charging station falls to 0 as soon as no session is
+  under way, instead of showing the end of the last charge for about 10 minutes.
+
 ## [1.1.0] - 2026-11-02
 
 ### Added
