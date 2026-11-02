@@ -16,6 +16,7 @@ Integration liest die Messgeräte zuerst im lokalen Netz und über die Smappee-C
 | Smappee Energy, Solar, Pro/Plus   | lokale Web-API (HTTP), alle 5 bis 60 Sekunden |
 | Smappee Infinity, Genius, Connect | lokaler MQTT-Broker (Port 1883), live         |
 | Jedes Messgerät deines Kontos     | Smappee-Cloud (optional), alle 5 Minuten      |
+| Ladestationen deines Kontos       | Smappee-Cloud, alle 5 Minuten, nur Lesen      |
 
 ## Voraussetzungen
 
@@ -78,6 +79,26 @@ Ein Gerät pro Smappee Switch, Comfort Plug oder Cloud-Ausgangsmodul, mit einer 
 (benannt wie in der App, sonst **Smappee-Steckdose** und ihre Nummer). Eine Comfort Plug (433 MHz)
 meldet ihren Zustand nie: Gladys zeigt den zuletzt gesendeten Befehl.
 
+### Ladestationen
+
+Ein Gerät nur zum Lesen pro Anschluss einer Smappee-Ladestation (EV Wall...), benannt wie in der App,
+sonst **Smappee-Ladestation** und ihre Nummer.
+Nur die Smappee-Cloud liefert sie: Füll den Cloud-Abschnitt aus, auch wenn das Messgerät lokal gelesen
+wird. Alle Werte werden alle 5 Minuten aktualisiert.
+
+- **Anschluss**: frei oder belegt, solange ein Fahrzeug angeschlossen ist;
+- **Ladevorgang**: lädt, Fahrzeug angeschlossen, von der Ladestation pausiert oder inaktiv;
+- **Ladeleistung** (kW): der Mittelwert der letzten 5 Minuten, für ein über die Cloud gelesenes Messgerät;
+- **Energie der letzten Sitzung** (kWh) und **Dauer der letzten Sitzung**: die laufende Sitzung, sonst
+  die vorherige. Während des Ladens ist die Energie die an der Ladestation gemessene, einige Minuten
+  verzögert;
+- **Gesamte Ladeenergie** (kWh): der Zähler der Ladestation, aus den Sitzungen gelesen. Der Wert ändert
+  sich am Ende einer Sitzung und bleibt leer bis zur ersten Sitzung der letzten 30 Tage.
+
+Diese Energie ist bereits im Netzbezug des Messgeräts enthalten: Keine dieser Funktionen wird im
+Energie-Tab berechnet. Um eine Szene zu starten, nimm den Standard-Auslöser auf einen Gerätewert, zum
+Beispiel wenn sich der **Ladevorgang** ändert.
+
 ## Energie-Tab
 
 Der Energie-Tab von Gladys 5.2 bepreist, was das Netz liefert: den **Verbrauchszähler** eines Messgeräts ohne Solarmodule, den **Bezugszähler** eines Messgeräts mit Solarmodulen (sein **Verbrauchszähler**, der den selbst genutzten Solarstrom enthält, wird angezeigt, aber nicht bepreist). Der **Energiezähler** der Unterzähler ist ebenfalls ein Verbrauchszähler, der **Solarproduktionszähler** ein Produktionszähler. Ordne die Unterzähler in den Energie-Einstellungen dem Messgerät unter, damit sie
@@ -126,6 +147,8 @@ Cloud-Zugangsdaten).
 
 ## Grenzen
 
+- Ladestationen: nur Lesen, kein Start, keine Pause, kein Lademodus aus Gladys. Beim ersten Lesen
+  werden nur die Sitzungen der letzten 30 Tage geholt.
 - Ohne die Hardware entwickelt: Die Nachrichtenformate stammen aus pysmappee und der offiziellen
   Dokumentation. Rückmeldungen willkommen.
 - Energy, Solar und Pro liefern über ihre lokale API weder Spannung noch Unterzähler.

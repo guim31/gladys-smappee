@@ -12,7 +12,11 @@
 //     `energy-production-sensor/*`, the export to `grid-sensor/output-*`.
 //     Plus the phase voltages read by the local MQTT broker;
 //   - `submeter`: one per sub-circuit (CT clamps) of an Infinity / Genius;
-//   - `actuator`: one per Smappee Switch, Comfort Plug or output module.
+//   - `actuator`: one per Smappee Switch, Comfort Plug or output module;
+//   - `charger`: one per connector of a charging station, read-only and read
+//     from the cloud only (no local source). Its energy is already in the grid
+//     of the site, and a session reaches the total only when it stops: none of
+//     its features is an `energy-sensor`, so the energy tab never costs them.
 //
 // The monitors do not give energy counters over their local API: the indexes
 // are the power integrated by the integration (kept in /data), or the sum of
@@ -27,7 +31,12 @@ import {
 } from '@gladysassistant/integration-sdk';
 import { modelOf } from './smappee/model.js';
 
-export const DEVICE_TYPES = { monitor: 'monitor', submeter: 'submeter', actuator: 'actuator' };
+export const DEVICE_TYPES = {
+  monitor: 'monitor',
+  submeter: 'submeter',
+  actuator: 'actuator',
+  charger: 'charger',
+};
 
 // Names: frozen in Gladys when the user creates the device, written in the
 // language chosen in the configuration at that moment. `{n}` is a number.
@@ -48,6 +57,13 @@ export const NAMES = {
     switch: 'On/Off',
     submeter: 'Smappee sub-meter {n}',
     plug: 'Smappee plug {n}',
+    'connector-status': 'Connector',
+    'charging-state': 'Charging state',
+    'charge-power': 'Charging power',
+    'session-energy': 'Last session energy',
+    'session-duration': 'Last session duration',
+    'total-energy': 'Total charged energy',
+    charger: 'Smappee charger {n}',
   },
   fr: {
     power: 'Consommation',
@@ -65,6 +81,13 @@ export const NAMES = {
     switch: 'Marche/Arrêt',
     submeter: 'Sous-compteur Smappee {n}',
     plug: 'Prise Smappee {n}',
+    'connector-status': 'Connecteur',
+    'charging-state': 'État de la recharge',
+    'charge-power': 'Puissance de charge',
+    'session-energy': 'Énergie de la dernière session',
+    'session-duration': 'Durée de la dernière session',
+    'total-energy': 'Énergie totale chargée',
+    charger: 'Borne Smappee {n}',
   },
   de: {
     power: 'Verbrauch',
@@ -82,6 +105,13 @@ export const NAMES = {
     switch: 'Ein/Aus',
     submeter: 'Smappee-Unterzähler {n}',
     plug: 'Smappee-Steckdose {n}',
+    'connector-status': 'Anschluss',
+    'charging-state': 'Ladevorgang',
+    'charge-power': 'Ladeleistung',
+    'session-energy': 'Energie der letzten Sitzung',
+    'session-duration': 'Dauer der letzten Sitzung',
+    'total-energy': 'Gesamte Ladeenergie',
+    charger: 'Smappee-Ladestation {n}',
   },
   es: {
     power: 'Consumo',
@@ -99,6 +129,13 @@ export const NAMES = {
     switch: 'Encendido/Apagado',
     submeter: 'Submedidor Smappee {n}',
     plug: 'Enchufe Smappee {n}',
+    'connector-status': 'Conector',
+    'charging-state': 'Estado de la recarga',
+    'charge-power': 'Potencia de carga',
+    'session-energy': 'Energía de la última sesión',
+    'session-duration': 'Duración de la última sesión',
+    'total-energy': 'Energía total cargada',
+    charger: 'Cargador Smappee {n}',
   },
 };
 
@@ -185,6 +222,55 @@ const SPECS = {
       slow: true,
     },
   },
+  charger: {
+    'connector-status': {
+      category: CATEGORIES.CHARGING_STATION,
+      type: TYPES.CHARGING_STATION.CONNECTOR_STATUS,
+      min: 0,
+      max: 4,
+      decimals: 0,
+    },
+    'charging-state': {
+      category: CATEGORIES.CHARGING_STATION,
+      type: TYPES.CHARGING_STATION.CHARGING_STATE,
+      min: 0,
+      max: 5,
+      decimals: 0,
+    },
+    'charge-power': {
+      category: CATEGORIES.ELECTRICAL_VEHICLE_CHARGE,
+      type: TYPES.ELECTRICAL_VEHICLE_CHARGE.CHARGE_POWER,
+      // The core has no watt in this category.
+      unit: UNITS.KILOWATT,
+      min: 0,
+      max: 30,
+      decimals: 2,
+    },
+    'session-energy': {
+      category: CATEGORIES.ELECTRICAL_VEHICLE_CHARGE,
+      type: TYPES.ELECTRICAL_VEHICLE_CHARGE.LAST_CHARGE_ENERGY_ADDED,
+      unit: UNITS.KILOWATT_HOUR,
+      min: 0,
+      max: 200,
+      decimals: 3,
+    },
+    'session-duration': {
+      category: CATEGORIES.DURATION,
+      type: TYPES.DURATION.INTEGER,
+      unit: UNITS.MINUTES,
+      min: 0,
+      max: 100_000,
+      decimals: 0,
+    },
+    'total-energy': {
+      category: CATEGORIES.ELECTRICAL_VEHICLE_CHARGE,
+      type: TYPES.ELECTRICAL_VEHICLE_CHARGE.CHARGE_ENERGY_ADDED_TOTAL,
+      unit: UNITS.KILOWATT_HOUR,
+      min: 0,
+      max: INDEX_MAX,
+      decimals: 3,
+    },
+  },
   actuator: {
     switch: {
       category: CATEGORIES.SWITCH,
@@ -226,6 +312,14 @@ export function monitorKeys({ solar, phases = 0 }) {
 
 export const SUBMETER_KEYS = ['power', 'energy', 'current'];
 export const ACTUATOR_KEYS = ['switch'];
+export const CHARGER_KEYS = [
+  'connector-status',
+  'charging-state',
+  'charge-power',
+  'session-energy',
+  'session-duration',
+  'total-energy',
+];
 
 /** The platform id of a record: the monitor serial, plus the channel or node. */
 export function platformId(record) {
@@ -246,6 +340,8 @@ export function deviceName(record, language = 'en') {
       return `${modelOf(record.serial)} ${record.serial}`;
     case 'submeter':
       return record.name ?? fill(names.submeter, Number(record.id) + 1);
+    case 'charger':
+      return record.name ?? fill(names.charger, record.position ?? 1);
     default:
       return record.name ?? fill(names.plug, record.id);
   }
@@ -275,6 +371,9 @@ export function buildDevice(gladys, record, { language = 'fr', controls = true }
   }
   if (record.kind === 'actuator') {
     params.push({ name: 'NODE_ID', value: record.id });
+  }
+  if (record.kind === 'charger') {
+    params.push({ name: 'CHARGER_SERIAL', value: record.id });
   }
   return {
     name: deviceName(record, language),
@@ -361,6 +460,16 @@ export function deviceValues(record) {
       set('energy', energy.consumption);
       set('current', num(live.current) === null ? null : Math.abs(live.current));
       break;
+    case 'charger': {
+      const session = record.session ?? {};
+      set('connector-status', session.connector);
+      set('charging-state', session.charging);
+      set('charge-power', num(live.power) === null ? null : live.power / 1000);
+      set('session-energy', session.energy);
+      set('session-duration', session.minutes);
+      set('total-energy', session.total);
+      break;
+    }
     default:
       if (typeof record.on === 'boolean') {
         values.switch = record.on ? 1 : 0;

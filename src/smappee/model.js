@@ -288,6 +288,135 @@ export function cloudActuators(config) {
   return result;
 }
 
+/**
+ * The chargers of the charging stations of a `meteringconfiguration`. The
+ * sessions are asked by station serial (`62...`) and answered with the charger
+ * serial (`58...`), neither of which is the monitor serial of the site.
+ */
+export function cloudChargers(config) {
+  const result = [];
+  for (const station of config?.chargingStations ?? []) {
+    const stationSerial = normalizeSerial(station?.serialNumber);
+    const chargers = station?.chargers ?? station?.mainDevices?.flatMap((d) => d?.chargers ?? []);
+    for (const charger of chargers ?? []) {
+      const id = normalizeSerial(charger?.serialNumber);
+      if (!stationSerial || !id) {
+        continue;
+      }
+      const channels = charger.channels ?? [];
+      result.push({
+        id,
+        station: stationSerial,
+        position: num(charger.position),
+        name: cleanName(channels[0]?.name),
+        channels: channels
+          .map((channel) => num(channel?.consumptionIndex))
+          .filter((n) => n !== null),
+      });
+    }
+  }
+  return result;
+}
+
+// The values of the core (CHARGING_STATION_CONNECTOR_STATUS and _CHARGING_STATE
+// in server/utils/constants.js), which the SDK does not export.
+export const CONNECTOR_STATUS = { AVAILABLE: 0, OCCUPIED: 1 };
+export const CHARGING_STATE = { CHARGING: 0, EV_CONNECTED: 1, PAUSED_BY_CHARGER: 3, IDLE: 4 };
+
+// The API documents milliseconds and answers `from` and `to` in seconds: both are read.
+const sessionTime = (value) => {
+  const n = num(value);
+  return n === null ? null : n < 1e11 ? n * 1000 : n;
+};
+
+/** The sessions of one charger in an answer of `sessions`, oldest first. */
+export function cloudSessions(answer, charger) {
+  return (Array.isArray(answer) ? answer : [])
+    .filter((session) => {
+      const serial = normalizeSerial(session?.serialNumber);
+      return serial ? serial === charger.id : num(session?.connector) === charger.position;
+    })
+    .map((session) => {
+      const start = num(session.startReading);
+      const stop = num(session.stopReading);
+      // A session under way says `energy: 0` and has no `stopReading` until it stops.
+      const energy = num(session.energy);
+      return {
+        from: sessionTime(session.from),
+        to: sessionTime(session.to),
+        status: String(session.status ?? '').toUpperCase(),
+        stop,
+        energy: energy > 0 ? energy : start !== null && stop !== null ? stop - start : null,
+      };
+    })
+    .filter((session) => session.from !== null)
+    .sort((a, b) => a.from - b.from);
+}
+
+/**
+ * The energy of some channels since a time, in kWh, from a `consumption` answer
+ * (`active`: Wh per block and per channel). Null when it has no channel data.
+ */
+export function cloudChannelEnergy(answer, channels, from) {
+  const blocks = cloudBlocks(answer).filter((block) => block.active.length > 0);
+  if (blocks.length === 0) {
+    return null;
+  }
+  let wh = 0;
+  for (const block of blocks) {
+    if (block.at + 5 * 60_000 > from) {
+      wh += channels.reduce((sum, index) => sum + Math.max(block.active[index] ?? 0, 0), 0);
+    }
+  }
+  return wh / 1000;
+}
+
+function chargingStateOf(status) {
+  switch (status) {
+    case 'CHARGING':
+      return CHARGING_STATE.CHARGING;
+    case 'SUSPENDED':
+      return CHARGING_STATE.PAUSED_BY_CHARGER;
+    // Still in the active list: the charge is over, the vehicle has not left.
+    case 'STOPPED':
+      return CHARGING_STATE.IDLE;
+    default:
+      return CHARGING_STATE.EV_CONNECTED;
+  }
+}
+
+/**
+ * What a charger shows, from its previous state and the sessions just read.
+ * A session in the active list means a connected vehicle (not `chargingState`
+ * of the smart devices, seen at STARTED with no vehicle). The total is the
+ * meter read at the stop of the sessions, so it never goes down.
+ */
+export function chargerSession(previous, finished, active, now = Date.now()) {
+  const state = { ...previous };
+  const current = active[active.length - 1] ?? null;
+  state.connector = current ? CONNECTOR_STATUS.OCCUPIED : CONNECTOR_STATUS.AVAILABLE;
+  state.charging = current ? chargingStateOf(current.status) : CHARGING_STATE.IDLE;
+  for (const session of finished) {
+    state.lastFrom = Math.max(state.lastFrom ?? 0, session.from);
+  }
+  for (const session of [...finished, ...active]) {
+    if (session.stop !== null) {
+      state.total = Math.max(state.total ?? 0, session.stop);
+    }
+  }
+  const last = current ?? finished[finished.length - 1] ?? null;
+  if (last) {
+    if (last.energy !== null) {
+      state.energy = last.energy;
+    }
+    const end = last === current ? (last.to ?? now) : last.to;
+    if (end !== null && end >= last.from) {
+      state.minutes = (end - last.from) / 60_000;
+    }
+  }
+  return state;
+}
+
 /** True when the metering configuration has a production (solar) measurement. */
 export function cloudHasSolar(config) {
   return (config?.measurements ?? []).some((m) => m?.type === 'PRODUCTION');
@@ -303,6 +432,7 @@ export function cloudBlocks(answer) {
       at: num(block?.timestamp),
       consumption: num(block?.consumption),
       solar: num(block?.solar),
+      active: Array.isArray(block?.active) ? block.active.map(num) : [],
     }))
     .filter((block) => block.at !== null && block.consumption !== null)
     .sort((a, b) => a.at - b.at);

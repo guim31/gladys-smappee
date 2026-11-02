@@ -10,6 +10,12 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- Charging stations of the Smappee account, read through the cloud: one
+  read-only device per connector with its connector status, charging state,
+  charging power, last session energy and duration, and total charged energy.
+
 ## [1.0.1] - 2026-10-22
 
 ### Security
