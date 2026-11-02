@@ -286,6 +286,13 @@ export class FakeSmappeeCloud {
         send(200, this.data.serviceLocations);
         return;
       }
+      if (path === 'chargingstations/6201000001/sessions') {
+        const [from, to] = (url.searchParams.get('range') ?? '').split(',').map(Number);
+        const inRange = (session) => session.from * 1000 >= from && session.from * 1000 < to;
+        const active = url.searchParams.get('active') === 'true';
+        send(200, (active ? this.data.activeSessions : this.data.sessions).filter(inRange));
+        return;
+      }
       const match = /^servicelocation\/(\d+)\/(.+)$/.exec(path);
       if (!match || match[1] !== '20202') {
         send(404, { error: 'Not found' });
@@ -317,10 +324,10 @@ export class FakeSmappeeCloud {
   }
 
   /** A new 5-minute block, `minutes` after the last one. */
-  addBlock(consumption, solar, minutes = 5) {
+  addBlock(consumption, solar, minutes = 5, active = undefined) {
     const blocks = this.data.consumption.consumptions;
     const at = blocks[blocks.length - 1].timestamp + minutes * 60_000;
-    blocks.push({ timestamp: at, consumption, solar, alwaysOn: 12 });
+    blocks.push({ timestamp: at, consumption, solar, alwaysOn: 12, active });
     return at;
   }
 }

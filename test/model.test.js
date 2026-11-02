@@ -9,8 +9,14 @@ import { readFileSync } from 'node:fs';
 import { normalizeConfig, parseHosts } from '../src/config.js';
 import { MAX_GAP_MS, accumulate, createMeter } from '../src/energy.js';
 import {
+  CHARGING_STATE,
+  CONNECTOR_STATUS,
+  chargerSession,
   cloudActuators,
   cloudBlocks,
+  cloudChannelEnergy,
+  cloudChargers,
+  cloudSessions,
   cloudState,
   httpActuators,
   httpChannels,
@@ -145,4 +151,82 @@ test('energy: trapezoids in kWh, no bridge over a gap, never down', () => {
   accumulate(meter, null, 0);
   assert.equal(meter.at, null);
   assert.equal(createMeter(-3).kwh, 0);
+});
+
+test('cloud charging stations: the serials, the channels, the sessions', () => {
+  const cloud = fixture('cloud');
+  const chargers = cloudChargers(cloud.meteringConfiguration);
+  assert.deepEqual(chargers, [
+    { id: '5820000001', station: '6201000001', position: 1, name: 'Allée', channels: [0] },
+  ]);
+  assert.deepEqual(cloudChargers({ chargingStations: [{ serialNumber: 'x' }] }), []);
+  // `from` and `to` in seconds, as the real API, or in ms, as its documentation.
+  const seconds = cloudSessions(cloud.sessions, chargers[0]);
+  assert.equal(seconds[0].from, 1760000000_000);
+  assert.equal(seconds[0].to, 1760024347_000);
+  assert.equal(seconds[0].energy, 32.844);
+  const ms = cloudSessions([{ serialNumber: '5820000001', from: 1760000000_000 }], chargers[0]);
+  assert.equal(ms[0].from, 1760000000_000);
+  // Another connector of the station, by serial or by position.
+  assert.deepEqual(cloudSessions([{ serialNumber: '5820000002', from: 1 }], chargers[0]), []);
+  assert.equal(cloudSessions([{ connector: 1, from: 1 }], chargers[0]).length, 1);
+  assert.deepEqual(cloudSessions({ error: 'no' }, chargers[0]), []);
+});
+
+test('a session under way: no meter nor energy yet, measured on the channel', () => {
+  const cloud = fixture('cloud');
+  const [charger] = cloudChargers(cloud.meteringConfiguration);
+  const [session] = cloudSessions([cloud.activeSession], charger);
+  assert.equal(session.to, null);
+  assert.equal(session.stop, null);
+  assert.equal(session.energy, null);
+  // A real block: 400.8 Wh in the 5 minutes where the session began after 89 s.
+  const from = 1000_000 + 89_000;
+  const blocks = (active) => ({
+    consumptions: [
+      { timestamp: 700_000, consumption: 1, active: [0.2] },
+      { timestamp: 1000_000, consumption: 1, active: [400.8] },
+      { timestamp: 1300_000, consumption: 1, active: [570.5, -40] },
+    ].map((block) => (active ? block : { ...block, active: undefined })),
+  });
+  assert.equal(Math.round(cloudChannelEnergy(blocks(true), [0], from) * 1000), 971);
+  // A negative channel (a grid exporting) never lowers it.
+  assert.equal(Math.round(cloudChannelEnergy(blocks(true), [1], from) * 1000), 0);
+  assert.equal(cloudChannelEnergy(blocks(false), [0], from), null);
+});
+
+test('charger state: every session status, the meter never goes down', () => {
+  const session = (status, extra = {}) => ({
+    from: 1000,
+    to: null,
+    status,
+    stop: null,
+    energy: null,
+    ...extra,
+  });
+  const charging = (status) => chargerSession({}, [], [session(status)], 61_000).charging;
+  assert.equal(charging('CHARGING'), CHARGING_STATE.CHARGING);
+  assert.equal(charging('STARTED'), CHARGING_STATE.EV_CONNECTED);
+  assert.equal(charging('SUSPENDED'), CHARGING_STATE.PAUSED_BY_CHARGER);
+  assert.equal(charging('STOPPED'), CHARGING_STATE.IDLE);
+
+  const running = chargerSession({ total: 900, energy: 5 }, [], [session('CHARGING')], 61_000);
+  assert.equal(running.connector, CONNECTOR_STATUS.OCCUPIED);
+  assert.equal(running.minutes, 1);
+  // No energy in the answer: the last known one stays.
+  assert.equal(running.energy, 5);
+
+  const done = session('STOPPED', { to: 121_000, stop: 800, energy: 3 });
+  const idle = chargerSession({ total: 900 }, [done], []);
+  assert.equal(idle.connector, CONNECTOR_STATUS.AVAILABLE);
+  assert.equal(idle.charging, CHARGING_STATE.IDLE);
+  assert.equal(idle.total, 900);
+  assert.equal(idle.energy, 3);
+  assert.equal(idle.minutes, 2);
+  assert.equal(idle.lastFrom, 1000);
+  // Nothing read: only the connector and the state are known.
+  assert.deepEqual(chargerSession({}, [], []), {
+    connector: CONNECTOR_STATUS.AVAILABLE,
+    charging: CHARGING_STATE.IDLE,
+  });
 });

@@ -11,11 +11,12 @@ Cette intégration amène vos moniteurs d'énergie **Smappee** dans Gladys : con
 production solaire, soutirage et injection réseau, sous-compteurs, Smappee Switch et Comfort Plug.
 Elle lit les boîtiers sur votre réseau local d'abord, et par le cloud Smappee ceux dont vous ne saisissez pas l'adresse.
 
-| Boîtier                              | Lu par                                       |
-| ------------------------------------ | -------------------------------------------- |
-| Smappee Energy, Solar, Pro/Plus      | API web locale (HTTP), toutes les 5 à 60 s   |
-| Smappee Infinity, Genius, Connect    | broker MQTT local (port 1883), en direct     |
-| Tout boîtier de votre compte Smappee | cloud Smappee (facultatif), toutes les 5 min |
+| Boîtier                              | Lu par                                         |
+| ------------------------------------ | ---------------------------------------------- |
+| Smappee Energy, Solar, Pro/Plus      | API web locale (HTTP), toutes les 5 à 60 s     |
+| Smappee Infinity, Genius, Connect    | broker MQTT local (port 1883), en direct       |
+| Tout boîtier de votre compte Smappee | cloud Smappee (facultatif), toutes les 5 min   |
+| Bornes de recharge de votre compte   | cloud Smappee, toutes les 5 min, lecture seule |
 
 ## Prérequis
 
@@ -80,6 +81,25 @@ Un appareil par Smappee Switch, Comfort Plug ou module de sortie du cloud, avec 
 **Marche/Arrêt** (nommé comme dans l'application, sinon **Prise Smappee** et son numéro). Une
 Comfort Plug (433 MHz) ne dit jamais son état : Gladys affiche la dernière commande envoyée.
 
+### Bornes de recharge
+
+Un appareil en lecture seule par connecteur d'une borne Smappee (EV Wall...), nommé comme dans
+l'application, sinon **Borne Smappee** et son numéro. Seul le cloud Smappee les donne : remplissez la section cloud, même si le boîtier est
+lu en local. Toutes les valeurs sont rafraîchies toutes les 5 minutes.
+
+- **Connecteur** : libre, ou occupé tant qu'un véhicule est branché ;
+- **État de la recharge** : en charge, véhicule branché, en pause par la borne, ou au repos ;
+- **Puissance de charge** (kW) : la moyenne des 5 dernières minutes, pour un boîtier lu par le cloud ;
+- **Énergie de la dernière session** (kWh) et **Durée de la dernière session** : la session en cours,
+  sinon la précédente. Pendant une charge, l'énergie est celle mesurée sur la borne, avec quelques
+  minutes de retard ;
+- **Énergie totale chargée** (kWh) : le compteur de la borne, lu dans les sessions. Elle bouge à
+  l'arrêt d'une session, et reste vide jusqu'à la première session des 30 derniers jours.
+
+Cette énergie est déjà comptée dans le soutirage du boîtier : aucune de ces fonctionnalités n'est
+chiffrée dans l'onglet énergie. Pour lancer une scène, utilisez le déclencheur standard sur la valeur
+d'un appareil, par exemple quand l'**État de la recharge** change.
+
 ## Onglet énergie
 
 L'onglet énergie de Gladys 5.2 chiffre ce que fournit le réseau : l'**Index de consommation** d'un boîtier sans panneaux solaires, l'**Index de soutirage** d'un boîtier avec panneaux solaires (son **Index de consommation**, qui inclut l'énergie solaire consommée sur place, est affiché mais non chiffré). L'**Index d'énergie** des sous-compteurs est aussi un compteur de consommation, et l'**Index de production solaire** un compteur de production. Placez les sous-compteurs sous le boîtier dans les réglages énergie, pour
@@ -128,6 +148,8 @@ et dit ce qui a répondu, comment, et ce qui ne va pas (mot de passe, adresse, i
 
 ## Limites
 
+- Bornes de recharge : lecture seule, ni démarrage, ni pause, ni mode de charge depuis Gladys. La
+  première lecture ne remonte que les sessions des 30 derniers jours.
 - Développée sans le matériel : les formats de messages viennent de pysmappee et de la documentation
   officielle. Vos retours sont les bienvenus.
 - Energy, Solar et Pro ne donnent ni tension ni sous-compteur par leur API locale.

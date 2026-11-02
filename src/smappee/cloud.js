@@ -140,6 +140,16 @@ export class SmappeeCloud {
     });
   }
 
+  /**
+   * The charging sessions of a station, between two times in ms: the finished
+   * ones, or with `active` the ones whose vehicle is still connected. The range
+   * goes in the path: its comma must stay as the API documents it.
+   */
+  chargingSessions(stationSerial, from, to, { active = false } = {}) {
+    const range = `range=${Math.round(from)},${Math.round(to)}${active ? '&active=true' : ''}`;
+    return this.call(`chargingstations/${encodeURIComponent(stationSerial)}/sessions?${range}`);
+  }
+
   actuatorState(locationId, actuatorId) {
     return this.call(
       `servicelocation/${encodeURIComponent(locationId)}/actuator/${encodeURIComponent(actuatorId)}/state`,

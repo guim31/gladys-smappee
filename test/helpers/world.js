@@ -22,6 +22,7 @@ export const MQTT_HOST = '127.0.0.3';
 export const HTTP_SERIAL = '1105000101';
 export const MQTT_SERIAL = '5010000101';
 export const CLOUD_SERIAL = '1005000202';
+export const CHARGER_ID = `${CLOUD_SERIAL}-5820000001`;
 
 export const CLOUD_CONFIG = {
   cloud_client_id: 'gladys-client',
@@ -73,8 +74,11 @@ export async function createWorld({
     const now = Date.now();
     fakeCloud.data.consumption.consumptions = [
       { timestamp: now - 15 * 60_000, consumption: 100, solar: 40, alwaysOn: 12 },
-      { timestamp: now - 10 * 60_000, consumption: 150, solar: 50, alwaysOn: 12 },
+      { timestamp: now - 10 * 60_000, consumption: 150, solar: 50, alwaysOn: 12, active: [120] },
     ];
+    // A finished session within the window the hub asks for (seconds, as the real API).
+    const start = Math.round((now - 2 * 86_400_000) / 1000);
+    Object.assign(fakeCloud.data.sessions[0], { from: start, to: start + 24_347 });
   }
   const hosts = [http && HTTP_HOST, mqtt && MQTT_HOST].filter(Boolean).join(', ');
   const gladys = createFakeGladys({

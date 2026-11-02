@@ -16,6 +16,7 @@ monitores de su red local, y por la nube Smappee aquellos cuya dirección no int
 | Smappee Energy, Solar, Pro/Plus   | API web local (HTTP), cada 5 a 60 segundos  |
 | Smappee Infinity, Genius, Connect | broker MQTT local (puerto 1883), en directo |
 | Cualquier monitor de su cuenta    | nube Smappee (opcional), cada 5 minutos     |
+| Cargadores de su cuenta           | nube Smappee, cada 5 minutos, solo lectura  |
 
 ## Requisitos
 
@@ -79,6 +80,24 @@ Un dispositivo por Smappee Switch, Comfort Plug o módulo de salida de la nube, 
 **Encendido/Apagado** (con el nombre de la aplicación, si no **Enchufe Smappee** y su número). Un
 Comfort Plug (433 MHz) nunca indica su estado: Gladys muestra la última orden enviada.
 
+### Cargadores
+
+Un dispositivo de solo lectura por conector de un cargador Smappee (EV Wall...), con el nombre de la
+aplicación, si no **Cargador Smappee** y su número. Solo la nube Smappee los proporciona: rellene la sección de la nube, aunque el monitor se
+lea en local. Todos los valores se actualizan cada 5 minutos.
+
+- **Conector**: libre, u ocupado mientras haya un vehículo conectado;
+- **Estado de la recarga**: cargando, vehículo conectado, en pausa por el cargador, o en reposo;
+- **Potencia de carga** (kW): la media de los últimos 5 minutos, para un monitor leído por la nube;
+- **Energía de la última sesión** (kWh) y **Duración de la última sesión**: la sesión en curso, si no
+  la anterior. Durante una carga, la energía es la medida en el cargador, con unos minutos de retraso;
+- **Energía total cargada** (kWh): el contador del cargador, leído en las sesiones. Cambia al terminar
+  una sesión, y queda vacía hasta la primera sesión de los últimos 30 días.
+
+Esta energía ya está incluida en la importación de red del monitor: ninguna de estas funciones se
+factura en la pestaña de energía. Para iniciar una escena, use el disparador estándar sobre el valor
+de un dispositivo, por ejemplo cuando cambie el **Estado de la recarga**.
+
 ## Pestaña de energía
 
 La pestaña de energía de Gladys 5.2 calcula el coste de lo que entrega la red: el **Índice de consumo** de un monitor sin paneles solares, el **Índice de importación** de un monitor con paneles solares (su **Índice de consumo**, que incluye la energía solar usada en casa, se muestra pero sin coste). El **Índice de energía** de los submedidores también es un contador de consumo, y el **Índice de producción solar** un contador de producción. Coloque los submedidores bajo el monitor en los ajustes de energía, para no
@@ -126,6 +145,8 @@ nube, e indica qué respondió, cómo, y qué falla (contraseña, dirección, cr
 
 ## Limitaciones
 
+- Cargadores: solo lectura, sin inicio, pausa ni modo de carga desde Gladys. La primera lectura solo
+  recupera las sesiones de los últimos 30 días.
 - Desarrollada sin el hardware: los formatos de mensajes vienen de pysmappee y de la documentación
   oficial. Sus comentarios son bienvenidos.
 - Energy, Solar y Pro no dan ni tensión ni submedidores por su API local.

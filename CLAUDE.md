@@ -275,6 +275,24 @@ http://<boîtier>/gateway/apipublic/<commande>`, corps texte brut (`load`, `load
   `…/actuator/<id>/state` (texte `ON_ON`), `POST …/actuator/<id>/ON_ON`. Sondé le 18/10/2026 : un
   client inconnu répond **400 `{"error":"ClientId not found"}`**, un jeton faux **401 en HTML**.
 
+- **Bornes** (sondé le 02/11/2026 sur une vraie EV Wall derrière un Connect `51…`) :
+  `meteringconfiguration.chargingStations[]` donne la série de station (`62…`) et ses `chargers[]`
+  (série `58…`, `position`, `channels[].consumptionIndex`). `GET chargingstations/<série station>/sessions?range=<ms>,<ms>[&active=true]`.
+  **La doc ment sur les temps** : `range` est bien en millisecondes, mais `from` et `to` reviennent en
+  **secondes**. `energy`, `startReading`, `stopReading` en kWh (`stopReading` est le compteur cumulé).
+  `GET chargingstations/<série du Connect ou de charger>` répond 404 : seule la série de station marche.
+  **Puissance** : `consumption` donne `active[]`, en Wh par bloc et indexé par `consumptionIndex` : sur une
+  vraie session de 32,844 kWh, la somme vaut 32,849 kWh (×12 = W sur un bloc de 5 min, cohérent avec
+  `current[]` × tension). Le canal du réseau y est négatif en injection.
+  **Ne pas utiliser `chargingState` de `smartdevices`** : `STARTED` aussi bien sans véhicule qu'en pleine
+  charge.
+  Le site de la borne apparaît avec deux service locations sœurs vides, sans `deviceSerialNumber`.
+  **Session en cours** (vue le 02/11/2026) : ni `to` ni `stopReading`, et `energy` à 0 après 9 min de
+  charge : l'énergie en cours se calcule sur `active[]` du canal. Un `startReading` peut être un peu
+  inférieur au `stopReading` précédent : le total garde le maximum. Les blocs arrivent en retard : à
+  l'instant t, le dernier bloc clos peut manquer encore 45 s après sa fin.
+  Les API v10/v11 de `smappee_ev` (Home Assistant) sont celles, privées, du tableau de bord : pas celles-ci.
+
 **Choix de conception**
 
 - Un boîtier = un appareil `monitor:<série>`, quel que soit l'accès : le local prime, un boîtier lu
@@ -308,6 +326,10 @@ http://<boîtier>/gateway/apipublic/<commande>`, corps texte brut (`load`, `load
 - - Comfort Plug (433 MHz, sans retour) : `has_feedback: false`. `controls` désactivé : `read_only`.
 - Pas de découverte mDNS : HA passe par `_ssh._tcp` filtré sur le nom `smappee…`, trop large pour un
   contrat de découverte affiché à l'installation.
+- **Borne** : `charger:<site>-<série charger>`, lecture seule, toujours par le cloud (même si le
+  boîtier est lu en local). Aucune fonctionnalité `energy-sensor` : `alreadyMeasuredByGrid` est vrai, et
+  un compteur qui ne bouge qu'à l'arrêt d'une session fausserait les coûts sur 30 minutes. Pas de pilotage
+  (démarrage, pause, mode) : à décider à part, une erreur coûte une voiture pas chargée.
 - Pas d'action de scène : l'action standard « contrôler un appareil » suffit pour les prises ; la
   forte consommation passe par le déclencheur standard sur « Consommation ».
 

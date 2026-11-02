@@ -39,6 +39,25 @@
       { "id": 5, "name": "Output module", "type": "INFINITY_OUTPUT_MODULE", "states": [] }
     ],
     "sensors": [],
+    "chargingStations": [
+      {
+        "id": 20202,
+        "serialNumber": "6201000001",
+        "connectSerialNumber": "1005000202",
+        "chargers": [
+          {
+            "uuid": "00000000-aaaa-4bbb-8ccc-000000000058",
+            "serialNumber": "5820000001",
+            "position": 1,
+            "minCurrent": 6,
+            "maxCurrent": 32,
+            "channels": [
+              { "consumptionIndex": 0, "powerTopicIndex": 0, "name": "Allée", "phase": "PHASEA" }
+            ]
+          }
+        ]
+      }
+    ],
     "measurements": [
       { "id": 0, "name": "Grid", "type": "GRID", "channels": [] },
       { "id": 1, "name": "Solar", "type": "PRODUCTION", "channels": [] }
@@ -51,5 +70,41 @@
       { "timestamp": 1760000300000, "consumption": 150, "solar": 50, "alwaysOn": 12 }
     ]
   },
-  "actuatorState": "ON_ON"
+  "actuatorState": "ON_ON",
+  "_sessions": "Shape of a real answer of chargingstations/<serial>/sessions (probed on 2026-11-02): `from` and `to` in seconds, though the documentation says milliseconds; `energy` and the readings in kWh. `activeSession` is a real session under way: no `to`, no `stopReading`, `energy` still 0 after 9 minutes of charge.",
+  "sessions": [
+    {
+      "id": 7,
+      "serialNumber": "5820000001",
+      "connector": 1,
+      "from": 1760000000,
+      "to": 1760024347,
+      "status": "STOPPED",
+      "suspendedByUser": false,
+      "externalControl": false,
+      "smartMode": "CHARGE_NOW",
+      "priority": 0,
+      "minimumExcessPercentage": 17,
+      "maxAmperes": [31.0, 0.0, 0.0],
+      "startReading": 819.971,
+      "stopReading": 852.815,
+      "energy": 32.844
+    }
+  ],
+  "activeSessions": [],
+  "activeSession": {
+    "id": 8,
+    "serialNumber": "5820000001",
+    "connector": 1,
+    "from": 1760100000,
+    "status": "CHARGING",
+    "suspendedByUser": false,
+    "externalControl": false,
+    "smartMode": "CHARGE_NOW",
+    "priority": 0,
+    "minimumExcessPercentage": 17,
+    "maxAmperes": [0.0, 0.0, 0.0],
+    "startReading": 852.794,
+    "energy": 0.0
+  }
 }

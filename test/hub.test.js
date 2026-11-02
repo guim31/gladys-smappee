@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  CHARGER_ID,
   CLOUD_SERIAL,
   HTTP_SERIAL,
   MQTT_SERIAL,
@@ -235,8 +236,9 @@ test('cloud: a site, its 5-minute blocks, its Comfort Plug', async (t) => {
       (entry) => entry.device_external_id === monitor.device && entry.transport === 'cloud',
     ),
   );
-  // The site without a monitor serial is left out; the output module has no on/off state.
-  assert.equal(world.fake.discoveredDevices.length, 2);
+  // The site without a monitor serial is left out; the output module has no on/off
+  // state. Left: the monitor, the plug and the charger.
+  assert.equal(world.fake.discoveredDevices.length, 3);
 
   world.cloud.addBlock(200, 80);
   await world.hub.pollCloud();
@@ -254,6 +256,87 @@ test('cloud: a site, its 5-minute blocks, its Comfort Plug', async (t) => {
   assert.ok(
     world.cloud.requests.every((request) => !JSON.stringify(request.query).includes('secret')),
   );
+});
+
+test('cloud: a charger, its finished session, then a vehicle charging', async (t) => {
+  const world = await createWorld({ cloud: true });
+  t.after(() => world.stop());
+  await createAll(world);
+  const charger = ids(world.gladys, 'charger', CHARGER_ID);
+  const found = device(world, 'charger', CHARGER_ID);
+  assert.equal(found.name, 'Allée');
+  assert.ok(found.features.every((feature) => feature.read_only));
+  // Already in the grid of the site: the energy tab must never cost it again.
+  assert.ok(found.features.every((feature) => feature.category !== 'energy-sensor'));
+
+  // No vehicle; the last session (from and to in seconds) gives the energy and the meter.
+  assert.equal(world.fake.lastState(charger.feature('connector-status')), 0);
+  assert.equal(world.fake.lastState(charger.feature('charging-state')), 4);
+  assert.equal(world.fake.lastState(charger.feature('session-energy')), 32.844);
+  assert.equal(world.fake.lastState(charger.feature('total-energy')), 852.815);
+  assert.equal(world.fake.lastState(charger.feature('session-duration')), 406);
+  // Channel 0 of the last block: 120 Wh in 5 minutes.
+  assert.equal(world.fake.lastState(charger.feature('charge-power')), 1.44);
+
+  const start = Math.round((Date.now() - 3600_000) / 1000);
+  world.cloud.data.activeSessions = [{ ...world.cloud.data.activeSession, from: start }];
+  world.cloud.addBlock(200, 80, 5, [150]);
+  await world.hub.pollCloud();
+  assert.equal(world.fake.lastState(charger.feature('connector-status')), 1);
+  assert.equal(world.fake.lastState(charger.feature('charging-state')), 0);
+  // The session says 0 kWh until it stops: the channel of the charger gives 120 + 150 Wh.
+  assert.equal(world.fake.lastState(charger.feature('session-energy')), 0.27);
+  assert.equal(world.fake.lastState(charger.feature('charge-power')), 1.8);
+  // The meter moves when the session stops.
+  assert.equal(world.fake.lastState(charger.feature('total-energy')), 852.815);
+  assert.equal(world.fake.lastState(charger.feature('session-duration')), 60);
+
+  // It stops: the session reports its own energy and the meter.
+  const finished = { ...world.cloud.data.sessions[0], from: start };
+  finished.to = start + 3000;
+  finished.startReading = 852.794;
+  finished.stopReading = 862.794;
+  finished.energy = 10;
+  world.cloud.data.sessions.push(finished);
+  world.cloud.data.activeSessions = [];
+  await world.hub.pollCloud();
+  assert.equal(world.fake.lastState(charger.feature('connector-status')), 0);
+  assert.equal(world.fake.lastState(charger.feature('charging-state')), 4);
+  assert.equal(world.fake.lastState(charger.feature('session-energy')), 10);
+  assert.equal(world.fake.lastState(charger.feature('total-energy')), 862.794);
+  assert.equal(world.fake.lastState(charger.feature('session-duration')), 50);
+
+  // Read-only, whatever Gladys sends.
+  const ack = await world.fake.setValue(found, found.features[0], 1);
+  assert.equal(ack.success, false);
+  assert.ok(!world.cloud.requests.some((r) => r.path.includes('charging') && r.method !== 'GET'));
+});
+
+test('cloud: a charger comes back after a restart and is read for a local monitor', async (t) => {
+  const world = await createWorld({ cloud: true });
+  t.after(() => world.stop());
+  await world.hub.save();
+  const saved = JSON.parse(readFileSync(join(world.dataDir, 'smappee-state.json'), 'utf8'));
+  assert.equal(saved.records[`charger:${CHARGER_ID}`].station, '6201000001');
+  assert.equal(saved.records[`charger:${CHARGER_ID}`].session.total, 852.815);
+  await world.app.stop();
+
+  const again = await createWorld({ dataDir: world.dataDir, connect: false });
+  t.after(() => again.stop());
+  await again.hub.restore();
+  const record = again.hub.records.get(`charger:${CHARGER_ID}`);
+  assert.equal(record.session.energy, 32.844);
+  assert.deepEqual(record.channels, [0]);
+
+  // The monitor read locally: its charger has no other access than the cloud.
+  const local = await createWorld({ http: true, cloud: true, connect: false });
+  t.after(() => local.stop());
+  local.cloud.data.serviceLocations.serviceLocations[0].deviceSerialNumber = HTTP_SERIAL;
+  await local.gladys.connect();
+  await local.app.ready;
+  const charger = local.hub.records.get(`charger:${HTTP_SERIAL}-5820000001`);
+  assert.equal(charger.access, 'cloud');
+  assert.equal(charger.session.total, 852.815);
 });
 
 test('cloud: refused credentials are reported, without the secrets', async (t) => {

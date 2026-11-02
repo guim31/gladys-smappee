@@ -18,6 +18,7 @@ import { randomBytes } from 'node:crypto';
 import { createLogger } from '@gladysassistant/integration-sdk';
 import {
   ACTUATOR_KEYS,
+  CHARGER_KEYS,
   SUBMETER_KEYS,
   buildDevice,
   deviceIds,
@@ -30,9 +31,13 @@ import { accumulate, createMeter } from './energy.js';
 import { SmappeeCloud } from './smappee/cloud.js';
 import { HTTP_PORT, SmappeeHttp } from './smappee/http.js';
 import {
+  chargerSession,
   cloudActuators,
   cloudBlocks,
+  cloudChannelEnergy,
+  cloudChargers,
   cloudHasSolar,
+  cloudSessions,
   cloudState,
   httpActuators,
   httpChannels,
@@ -59,6 +64,8 @@ export const MQTT_PORT = 1883;
 export const HUB_TIMINGS = {
   // Cloud aggregates are 5-minute blocks: no use reading them more often.
   cloudPollMs: 5 * 60_000,
+  // How far back the charging sessions are asked (a first read, a vehicle left plugged in).
+  sessionWindowMs: 30 * 86_400_000,
   // The metering configuration (plugs, solar) of the cloud sites is read again this often.
   cloudConfigMs: 6 * 3600_000,
   // A cloud monitor whose last block is older than this is offline.
@@ -80,6 +87,8 @@ export const HUB_TIMINGS = {
   // The energy indexes are written to /data at most this often.
   saveMs: 60_000,
 };
+
+const DEFAULT_KEYS = { submeter: SUBMETER_KEYS, actuator: ACTUATOR_KEYS, charger: CHARGER_KEYS };
 
 const recordKey = (kind, serial, id) =>
   kind === 'monitor' ? `monitor:${serial}` : `${kind}:${serial}-${id}`;
@@ -239,10 +248,15 @@ export class SmappeeHub {
     const data = await this.store.load();
     for (const saved of Object.values(data.records ?? {})) {
       const serial = normalizeSerial(saved?.serial);
-      if (!serial || !['monitor', 'submeter', 'actuator'].includes(saved.kind)) {
+      if (!serial || !['monitor', 'submeter', 'actuator', 'charger'].includes(saved.kind)) {
         continue;
       }
-      if (saved.kind !== 'monitor' && !/^\d{1,9}$/.test(String(saved.id ?? ''))) {
+      // A charger is keyed on its serial; the others on a short channel or node number.
+      const validId =
+        saved.kind === 'charger'
+          ? normalizeSerial(saved.id) !== null
+          : /^\d{1,9}$/.test(String(saved.id ?? ''));
+      if (saved.kind !== 'monitor' && !validId) {
         continue;
       }
       const record = this.ensureRecord(saved.kind, serial, saved.id);
@@ -251,6 +265,10 @@ export class SmappeeHub {
       record.address = typeof saved.address === 'string' ? saved.address : null;
       record.actuatorKind = saved.actuatorKind === 'plug' ? 'plug' : 'switch';
       record.locationId = saved.locationId ?? null;
+      record.station = typeof saved.station === 'string' ? saved.station : null;
+      record.position = Number.isFinite(saved.position) ? saved.position : null;
+      record.channels = Array.isArray(saved.channels) ? saved.channels : [];
+      record.session = saved.session && typeof saved.session === 'object' ? saved.session : null;
       if (Array.isArray(saved.keys)) {
         record.keys = saved.keys.filter((key) => typeof key === 'string');
       }
@@ -273,6 +291,10 @@ export class SmappeeHub {
         address: record.address,
         actuatorKind: record.actuatorKind,
         locationId: record.locationId,
+        station: record.station,
+        position: record.position,
+        channels: record.channels,
+        session: record.session,
         keys: record.keys,
         meters: Object.fromEntries(
           Object.entries(record.meters).map(([name, meter]) => [name, meter.kwh]),
@@ -299,8 +321,11 @@ export class SmappeeHub {
         address: null,
         actuatorKind: 'switch',
         locationId: null,
-        keys:
-          kind === 'submeter' ? [...SUBMETER_KEYS] : kind === 'actuator' ? [...ACTUATOR_KEYS] : [],
+        station: null,
+        position: null,
+        channels: [],
+        session: null,
+        keys: [...(DEFAULT_KEYS[kind] ?? [])],
         live: {},
         meters: {},
         on: null,
@@ -391,6 +416,23 @@ export class SmappeeHub {
       if (typeof found.connected === 'boolean') {
         record.connected = found.connected;
       }
+    }
+  }
+
+  /** The chargers of a site: always through the cloud, the only access that gives them. */
+  adoptChargers(serial, chargers, locationId) {
+    for (const found of chargers) {
+      const record = this.ensureRecord('charger', serial, found.id);
+      const name = found.name ?? record.name;
+      if (record.name !== name || record.access !== 'cloud' || record.position !== found.position) {
+        this.devicesDirty = true;
+      }
+      record.name = name;
+      record.access = 'cloud';
+      record.locationId = locationId;
+      record.station = found.station;
+      record.position = found.position;
+      record.channels = found.channels;
     }
   }
 
@@ -833,6 +875,7 @@ export class SmappeeHub {
             }
           }
         }
+        this.adoptChargers(serial, cloudChargers(config), record.locationId);
       }
       if (this.cloudStatus !== 'ok') {
         logger.info('Connected to the Smappee cloud');
@@ -911,6 +954,11 @@ export class SmappeeHub {
           monitor.cloudAt !== null && now - monitor.cloudAt <= this.timings.cloudStaleMs;
         if (!fresh) {
           monitor.live = {};
+          for (const child of this.childrenOf(monitor.serial)) {
+            if (child.kind === 'charger') {
+              child.live = {};
+            }
+          }
         }
         if (monitor.reachable !== fresh) {
           await this.setReachable(monitor, fresh);
@@ -929,6 +977,40 @@ export class SmappeeHub {
         if (state !== null) {
           actuator.on = state;
         }
+      });
+      if (!ok) {
+        return;
+      }
+    }
+    for (const charger of [...this.records.values()]) {
+      if (charger.kind !== 'charger' || charger.access !== 'cloud' || !charger.station) {
+        continue;
+      }
+      const ok = await each(`charger ${charger.id}`, async () => {
+        const window = now - this.timings.sessionWindowMs;
+        const finished = await this.cloud.chargingSessions(
+          charger.station,
+          charger.session?.lastFrom ?? window,
+          now,
+        );
+        const active = cloudSessions(
+          await this.cloud.chargingSessions(charger.station, window, now, { active: true }),
+          charger,
+        );
+        const current = active[active.length - 1];
+        if (current?.energy === null && charger.channels.length > 0) {
+          current.energy = cloudChannelEnergy(
+            await this.cloud.consumption(charger.locationId, current.from - 5 * 60_000, now),
+            charger.channels,
+            current.from,
+          );
+        }
+        charger.session = chargerSession(
+          charger.session ?? {},
+          cloudSessions(finished, charger),
+          active,
+          now,
+        );
       });
       if (!ok) {
         return;
@@ -969,6 +1051,12 @@ export class SmappeeHub {
         voltages: [],
       };
       monitor.lastReadingAt = Date.now();
+      for (const child of this.childrenOf(monitor.serial)) {
+        if (child.kind === 'charger') {
+          const wh = child.channels.reduce((sum, index) => sum + (block.active[index] ?? 0), 0);
+          child.live = block.active.length > 0 ? { power: Math.max(wh, 0) * 12 } : {};
+        }
+      }
     }
     if (blocks.length > 0) {
       this.track(this.save());

@@ -16,6 +16,7 @@ monitors on your local network first, and through the Smappee cloud the ones who
 | Smappee Energy, Solar, Pro/Plus     | local web API (HTTP), every 5 to 60 seconds |
 | Smappee Infinity, Genius, Connect   | local MQTT broker (port 1883), pushed live  |
 | Any monitor of your Smappee account | Smappee cloud (optional), every 5 minutes   |
+| Charging stations of your account   | Smappee cloud, every 5 minutes, read-only   |
 
 ## Requirements
 
@@ -76,6 +77,25 @@ One device per Smappee Switch, Comfort Plug or cloud output module, with an **On
 (named as in the app, else **Smappee plug** and its number). A Comfort Plug (433 MHz) never tells
 its state: Gladys shows the last command sent.
 
+### Charging stations
+
+One read-only device per connector of a Smappee charging station (EV Wall...), named as in the app, else
+**Smappee charger** and its number.
+Only the Smappee cloud gives them: fill in the cloud section, even if the monitor is read locally.
+All the values are refreshed every 5 minutes.
+
+- **Connector**: free, or occupied while a vehicle is connected;
+- **Charging state**: charging, vehicle connected, paused by the charger, or idle;
+- **Charging power** (kW): the average of the last 5 minutes, for a monitor read through the cloud;
+- **Last session energy** (kWh) and **Last session duration**: the session under way, else the last
+  one. During a charge, the energy is the one measured on the charger, a few minutes late;
+- **Total charged energy** (kWh): the meter of the charger, as read in the sessions. It moves when a
+  session stops, and stays empty until the first session of the last 30 days.
+
+This energy is already in the grid import of the monitor: none of these features is costed in the
+energy tab. Use the standard trigger on a device value to start a scene, for example when the
+**Charging state** changes.
+
 ## Energy tab
 
 The energy tab of Gladys 5.2 prices what the grid delivers: the **Consumption index** of a monitor without solar panels, the **Grid import index** of a monitor with solar panels (its **Consumption index**, which includes the solar energy used at home, is shown but not priced). The **Energy index** of the sub-meters is a consumption counter too, and the **Solar production index** a production counter.
@@ -124,6 +144,8 @@ and tells what answered, how, and what went wrong (password, address, cloud cred
 
 ## Limits
 
+- Charging stations: read-only, no start, pause or charging mode from Gladys. Only sessions of the
+  last 30 days are read the first time.
 - Developed without the hardware: the message formats come from pysmappee and the official
   documentation. Feedback welcome.
 - Energy, Solar and Pro give no voltage and no sub-meter over their local API.

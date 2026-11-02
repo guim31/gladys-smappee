@@ -3,7 +3,7 @@
 // fixtures (test/fixtures/smappee, shapes of pysmappee and the official API):
 // a Smappee Solar read over HTTP (plug and switch), a Genius read over MQTT
 // (solar, three phases, two sub-meters, a switch and a plug), a monitor read
-// through the cloud (solar, a Comfort Plug) — in every name language.
+// through the cloud (solar, a Comfort Plug, a charger) — in every name language.
 //
 // The table (test/fixtures/gladys-feature-table.json) is extracted from the
 // core code: a category/type couple missing there shows as "undefined" or
@@ -43,8 +43,8 @@ for (const scenario of scenarios) {
       await world.hub.pollLocal();
       await createAll(world);
       const discovered = world.fake.discoveredDevices;
-      // 3 monitors, 2 sub-meters, 2 + 2 + 1 actuators.
-      assert.equal(discovered.length, 10, discovered.map((device) => device.name).join(', '));
+      // 3 monitors, 2 sub-meters, 2 + 2 + 1 actuators, 1 charger.
+      assert.equal(discovered.length, 11, discovered.map((device) => device.name).join(', '));
 
       for (const device of discovered) {
         const where = `${device.name} (${device.model})`;

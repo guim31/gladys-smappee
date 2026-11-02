@@ -93,10 +93,10 @@
         "es": "Nube Smappee (opcional)"
       },
       "description": {
-        "en": "For a monitor not reachable on your network, and for the plugs of the cloud account. Ask Smappee support for an API client id and secret, then type them with your Smappee account. Read every 5 minutes.",
-        "fr": "Pour un boîtier injoignable sur votre réseau, et pour les prises du compte cloud. Demandez au support Smappee un identifiant et un secret d'API, puis saisissez-les avec votre compte Smappee. Lu toutes les 5 minutes.",
-        "de": "Für ein Messgerät, das in deinem Netz nicht erreichbar ist, und für die Steckdosen des Cloud-Kontos. Frag den Smappee-Support nach einer API-Client-ID und einem Secret und gib sie mit deinem Smappee-Konto ein. Alle 5 Minuten gelesen.",
-        "es": "Para un monitor no accesible en su red, y para los enchufes de la cuenta en la nube. Pida al soporte de Smappee un identificador y un secreto de API, e introdúzcalos con su cuenta Smappee. Leído cada 5 minutos."
+        "en": "For a monitor not reachable on your network, and for the plugs and charging stations of the cloud account. Ask Smappee support for an API client id and secret, then type them with your Smappee account. Read every 5 minutes.",
+        "fr": "Pour un boîtier injoignable sur votre réseau, et pour les prises et les bornes de recharge du compte cloud. Demandez au support Smappee un identifiant et un secret d'API, puis saisissez-les avec votre compte Smappee. Lu toutes les 5 minutes.",
+        "de": "Für ein Messgerät, das in deinem Netz nicht erreichbar ist, und für die Steckdosen und Ladestationen des Cloud-Kontos. Frag den Smappee-Support nach einer API-Client-ID und einem Secret und gib sie mit deinem Smappee-Konto ein. Alle 5 Minuten gelesen.",
+        "es": "Para un monitor no accesible en su red, y para los enchufes y cargadores de la cuenta en la nube. Pida al soporte de Smappee un identificador y un secreto de API, e introdúzcalos con su cuenta Smappee. Leído cada 5 minutos."
       }
     },
     {
