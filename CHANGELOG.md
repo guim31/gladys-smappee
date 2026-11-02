@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-02
+
 ### Fixed
 
 - The charging power of a charging station falls to 0 as soon as no session is
@@ -54,7 +56,8 @@ the notes of the version's GitHub Release.
 - "Search for Smappee monitors" action, with a report of what answers.
 - Documentation in English, French, German and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-smappee/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/guim31/gladys-smappee/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/guim31/gladys-smappee/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/guim31/gladys-smappee/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/guim31/gladys-smappee/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/guim31/gladys-smappee/releases/tag/v1.0.0
