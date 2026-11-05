@@ -230,6 +230,24 @@
       "default": true
     },
     {
+      "key": "monitor_energy_tab",
+      "type": "boolean",
+      "label": {
+        "en": "Cost the monitor's consumption in the energy tab",
+        "fr": "Chiffrer la consommation du boîtier dans l'onglet énergie",
+        "de": "Verbrauch des Messgeräts im Energie-Tab berechnen",
+        "es": "Calcular el coste del monitor en la pestaña de energía"
+      },
+      "description": {
+        "en": "Turn off when another meter (Linky, Lixee...) already measures the whole home. The monitor's indexes stay shown and keep their history, but are no longer costed; the charging stations and sub-meters stay costed. Then click Update on the monitor in the Discovery tab.",
+        "fr": "À désactiver quand un autre compteur (Linky, Lixee…) mesure déjà la consommation totale. Les index du boîtier restent affichés avec leur historique, mais ne sont plus chiffrés ; bornes et sous-compteurs restent chiffrés. Puis Mettre à jour le boîtier dans l'onglet Découverte.",
+        "de": "Ausschalten, wenn ein anderer Zähler (Linky, Lixee…) schon den Gesamtverbrauch misst. Die Zähler des Messgeräts bleiben mit ihrem Verlauf angezeigt, werden aber nicht mehr berechnet; Ladestationen und Unterzähler schon. Klicke danach im Tab Entdecken beim Messgerät auf Aktualisieren.",
+        "es": "Desactívelo cuando otro contador (Linky, Lixee…) ya mide el consumo total. Los índices del monitor siguen mostrándose y conservan su historial, pero ya no se calcula su coste; los cargadores y los submedidores siguen calculándose. Después pulse Actualizar en el monitor en la pestaña Descubrimiento."
+      },
+      "required": false,
+      "default": true
+    },
+    {
       "key": "language",
       "type": "select",
       "label": {

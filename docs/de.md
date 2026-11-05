@@ -47,6 +47,8 @@ lesen und die in der Cloud bekannten Steckdosen zu steuern. Ein Messgerät mit e
 - **Lokales Aktualisierungsintervall**: wie oft die lokalen Messwerte an Gladys gesendet werden
   (standardmäßig 10 Sekunden). Die Energiezähler werden immer aus jedem Messwert berechnet.
 - **Smappee-Steckdosen und -Schalter steuern**: aus, werden sie nur angezeigt.
+- **Verbrauch des Messgeräts im Energie-Tab berechnen** (standardmäßig an): ausschalten, wenn ein
+  anderer Zähler schon das ganze Haus misst, siehe [Energie-Tab](#energie-tab).
 - **Sprache der Gerätenamen**: die Namen der Funktionen beim Hinzufügen eines Geräts.
 
 Öffne dann den Tab **Entdecken** und füge die gewünschten Geräte hinzu.
@@ -116,6 +118,24 @@ Beispiel wenn sich der **Ladevorgang** ändert.
 
 Der Energie-Tab von Gladys 5.2 bepreist, was das Netz liefert: den **Verbrauchszähler** eines Messgeräts ohne Solarmodule, den **Bezugszähler** eines Messgeräts mit Solarmodulen (sein **Verbrauchszähler**, der den selbst genutzten Solarstrom enthält, wird angezeigt, aber nicht bepreist). Der **Energiezähler** der Unterzähler ist ebenfalls ein Verbrauchszähler, der **Solarproduktionszähler** ein Produktionszähler. Ordne die Unterzähler und den **Energiezähler der Ladestation** in den
 Energie-Einstellungen dem Hauptzähler unter, damit sie nicht doppelt gezählt werden. Die Einspeisung wird angezeigt, nie noch einmal addiert.
+
+### Mit einem anderen Hauptzähler (Ladestation)
+
+Du hast schon einen Hauptzähler in Gladys (Linky über Lixee, Enedis…) und der Smappee soll vor
+allem zeigen, was das Auto verbraucht? Ohne Einstellung wird das Haus doppelt gezählt: vom Linky
+und vom Zähler des Messgeräts.
+
+1. Schalte in der Konfiguration der Integration **Verbrauch des Messgeräts im Energie-Tab
+   berechnen** aus und speichere.
+2. Öffne den Tab **Entdecken** und klicke beim Messgerät auf **Aktualisieren**. Der
+   **Bezugszähler** (oder der **Verbrauchszähler** ohne Solarmodule) wird ein Netzzähler: weiter
+   angezeigt, mit seinem Verlauf, aber nicht mehr bepreist. Sein abgeleiteter Verbrauch und seine
+   Kosten verschwinden aus dem Energie-Tab.
+3. Ordne in den Energie-Einstellungen den **Energiezähler der Ladestation** deinem Hauptzähler
+   unter: Der Energie-Tab zeigt dann Tag für Tag, was das Auto verbraucht. Die Unterzähler werden
+   weiter genauso bepreist.
+
+Ohne anderen Zähler lässt du die Option an: Das Messgerät bleibt dein Hauptzähler.
 
 ## Widget
 

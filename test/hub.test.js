@@ -615,3 +615,56 @@ test('overlapping reconnections share one run', async (t) => {
   assert.equal(a, b);
   await a;
 });
+
+// The structure the core compares on the Discovery screen (structureDiffers in
+// externalIntegration.getDiscoveredDevices.js): a difference offers "Update".
+const signature = (entry) =>
+  entry.features
+    .map((f) => JSON.stringify([f.external_id, f.category, f.type, f.unit ?? null, f.min, f.max]))
+    .sort()
+    .join('\n');
+
+test('monitor_energy_tab off: the monitor is re-published changed, its values are not', async (t) => {
+  const world = await createWorld({ http: true, cloud: true });
+  t.after(() => world.stop());
+  await createAll(world);
+  const before = new Map(world.fake.discoveredDevices.map((d) => [d.external_id, signature(d)]));
+  const monitor = ids(world.gladys, 'monitor', HTTP_SERIAL);
+  const statesBefore = Object.fromEntries(
+    device(world, 'monitor', HTTP_SERIAL).features.map((f) => [
+      f.external_id,
+      world.fake.lastState(f.external_id),
+    ]),
+  );
+
+  await world.fake.configUpdated({ ...world.gladys.fake.config, monitor_energy_tab: false });
+  await world.hub.idle();
+  const changed = world.fake.discoveredDevices
+    .filter((d) => before.get(d.external_id) !== signature(d))
+    .map((d) => d.external_id);
+  // Only the monitors: the HTTP one and the cloud site. Never the charger nor the plugs.
+  assert.deepEqual(
+    changed.sort(),
+    [monitor.device, ids(world.gladys, 'monitor', CLOUD_SERIAL).device].sort(),
+  );
+  const importEnergy = device(world, 'monitor', HTTP_SERIAL).features.find(
+    (f) => f.external_id === monitor.feature('import-energy'),
+  );
+  assert.equal(importEnergy.category, 'grid-sensor');
+  assert.equal(importEnergy.type, 'input-index');
+  const charger = device(world, 'charger', CHARGER_ID);
+  assert.ok(charger.features.some((f) => f.category === 'energy-sensor' && f.type === 'index'));
+
+  // The values published under the same external ids do not change.
+  await world.hub.pollLocal();
+  for (const [externalId, value] of Object.entries(statesBefore)) {
+    assert.equal(world.fake.lastState(externalId), value, externalId);
+  }
+
+  // Back on: the 1.2.0 structure again.
+  await world.fake.configUpdated({ ...world.gladys.fake.config, monitor_energy_tab: true });
+  await world.hub.idle();
+  for (const entry of world.fake.discoveredDevices) {
+    assert.equal(signature(entry), before.get(entry.external_id), entry.external_id);
+  }
+});

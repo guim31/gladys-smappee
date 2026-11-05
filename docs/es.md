@@ -47,6 +47,8 @@ red, y controlar los enchufes conocidos por la nube. Un monitor cuya dirección 
 - **Intervalo de actualización local**: frecuencia de envío de las mediciones locales a Gladys (10
   segundos por defecto). Los índices de energía se calculan siempre con cada medición.
 - **Controlar los enchufes e interruptores Smappee**: desactivado, se muestran en solo lectura.
+- **Calcular el coste del monitor en la pestaña de energía** (activado por defecto):
+  desactívelo cuando otro contador ya mide toda la casa, vea [Pestaña de energía](#pestaña-de-energía).
 - **Idioma de los nombres de dispositivos**: los nombres de las funciones al añadir un dispositivo.
 
 Abra luego la pestaña **Descubrir** y añada los dispositivos que desee.
@@ -115,6 +117,24 @@ de un dispositivo, por ejemplo cuando cambie el **Estado de la recarga**.
 
 La pestaña de energía de Gladys 5.2 calcula el coste de lo que entrega la red: el **Índice de consumo** de un monitor sin paneles solares, el **Índice de importación** de un monitor con paneles solares (su **Índice de consumo**, que incluye la energía solar usada en casa, se muestra pero sin coste). El **Índice de energía** de los submedidores también es un contador de consumo, y el **Índice de producción solar** un contador de producción. Coloque los submedidores, y el **Índice de energía del cargador** de los
 cargadores, bajo el contador principal en los ajustes de energía, para no contarlos dos veces. La exportación se muestra, nunca se vuelve a sumar.
+
+### Con otro contador principal (cargador)
+
+¿Ya tiene un contador principal en Gladys (Linky mediante Lixee, Enedis…) y el Smappee sirve sobre
+todo para aislar lo que consume el coche? Sin ajuste, la casa se cuenta dos veces: por el Linky y
+por el índice del monitor.
+
+1. En la configuración de la integración, desactive **Calcular el coste del monitor en la pestaña
+   de energía** y guarde.
+2. Abra la pestaña **Descubrimiento** y haga clic en **Actualizar** en el monitor. El **Índice de
+   importación** (o el **Índice de consumo** sin paneles solares) pasa a ser un índice de red:
+   sigue mostrándose, con su historial, pero ya sin coste. Su consumo y su coste derivados
+   desaparecen de la pestaña de energía.
+3. En los ajustes de energía, coloque el **Índice de energía del cargador** bajo su contador
+   principal: la pestaña de energía aísla entonces lo que consume el coche, día a día. Los
+   submedidores siguen calculándose igual.
+
+Sin otro contador, deje la opción activada: el monitor sigue siendo su contador principal.
 
 ## Widget
 

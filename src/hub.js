@@ -1129,7 +1129,11 @@ export class SmappeeHub {
 
   async publishDevices() {
     this.devicesDirty = true;
-    const options = { language: this.config.language, controls: this.config.controls };
+    const options = {
+      language: this.config.language,
+      controls: this.config.controls,
+      monitorEnergyTab: this.config.monitorEnergyTab,
+    };
     const devices = this.publishable().map((record) => buildDevice(this.gladys, record, options));
     await this.gladys.publishDiscoveredDevices(devices);
     this.devicesDirty = false;

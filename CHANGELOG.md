@@ -10,6 +10,16 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- Option **Cost the monitor's consumption in the energy tab** (on by default,
+  nothing changes for existing installations). Turn it off when another meter
+  (Linky, Lixee...) already measures the whole home: the **Grid import index**
+  (or the **Consumption index** of a monitor without solar panels) becomes a
+  grid index, still shown with its history but no longer costed, so the home is
+  not counted twice in the energy tab. Charging stations and sub-meters stay
+  costed. Click **Update** on the monitor in the Discovery tab after changing it.
+
 ## [1.2.0] - 2026-11-05
 
 ### Added
