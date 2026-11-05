@@ -47,6 +47,8 @@ réseau, et commander les prises connues du cloud. Un boîtier dont l'adresse es
 - **Rafraîchissement local** : fréquence d'envoi des mesures locales à Gladys (10 secondes par
   défaut). Les index d'énergie sont toujours calculés sur chaque mesure.
 - **Commander les prises et interrupteurs Smappee** : désactivé, ils sont affichés en lecture seule.
+- **Chiffrer la consommation du boîtier dans l'onglet énergie** (activé par défaut) : à désactiver
+  quand un autre compteur mesure déjà toute la maison, voir [Onglet énergie](#onglet-énergie).
 - **Langue des noms d'appareils** : les noms donnés aux fonctionnalités à l'ajout d'un appareil.
 
 Ouvrez ensuite l'onglet **Découverte** et ajoutez les appareils voulus.
@@ -119,6 +121,24 @@ d'un appareil, par exemple quand l'**État de la recharge** change.
 L'onglet énergie de Gladys 5.2 chiffre ce que fournit le réseau : l'**Index de consommation** d'un boîtier sans panneaux solaires, l'**Index de soutirage** d'un boîtier avec panneaux solaires (son **Index de consommation**, qui inclut l'énergie solaire consommée sur place, est affiché mais non chiffré). L'**Index d'énergie** des sous-compteurs est aussi un compteur de consommation, et l'**Index de production solaire** un compteur de production. Placez les sous-compteurs, et l'**Index d'énergie de la borne** des
 bornes de recharge, sous le compteur principal dans les réglages énergie, pour ne pas les compter deux
 fois. L'injection est affichée, jamais recomptée.
+
+### Avec un autre compteur principal (borne de recharge)
+
+Vous avez déjà un compteur principal dans Gladys (Linky par Lixee, Enedis…) et le Smappee sert
+surtout à isoler ce que prend la voiture ? Sans réglage, la maison est comptée deux fois : par le
+Linky et par l'index du boîtier.
+
+1. Dans la configuration de l'intégration, désactivez **Chiffrer la consommation du boîtier dans
+   l'onglet énergie** et enregistrez.
+2. Ouvrez l'onglet **Découverte** et cliquez sur **Mettre à jour** sur le boîtier. L'**Index de
+   soutirage** (ou l'**Index de consommation** sans panneaux solaires) devient un index de réseau :
+   toujours affiché, avec son historique, mais plus chiffré. Sa consommation et son coût dérivés
+   disparaissent de l'onglet énergie.
+3. Dans les réglages énergie, placez l'**Index d'énergie de la borne** sous votre compteur
+   principal : l'onglet énergie isole alors ce que prend la voiture, jour par jour. Les
+   sous-compteurs restent chiffrés de la même façon.
+
+Sans autre compteur, laissez l'option activée : le boîtier reste votre compteur principal.
 
 ## Widget
 

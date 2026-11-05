@@ -10,6 +10,8 @@
 //     grid import with them. With solar panels, the home consumption goes to
 //     `home-output-sensor/*` (shown, never costed), the production to
 //     `energy-production-sensor/*`, the export to `grid-sensor/output-*`.
+//     With `monitor_energy_tab` off (another meter counts the home), the
+//     whole-home index becomes `grid-sensor/input-index`, shown, not costed.
 //     Plus the phase voltages read by the local MQTT broker;
 //   - `submeter`: one per sub-circuit (CT clamps) of an Infinity / Genius;
 //   - `actuator`: one per Smappee Switch, Comfort Plug or output module;
@@ -301,6 +303,22 @@ export function specOf(kind, key) {
   return SPECS[kind]?.[baseKey(key)] ?? null;
 }
 
+// The whole-home indexes of a monitor (the energy drawn from the grid). With
+// `monitor_energy_tab` off, another meter (Linky...) already counts the home:
+// they become `grid-sensor/input-index`, shown and never costed (the core
+// derives no consumption from it), under the same keys, so the same external
+// ids and history. `home-energy` is never costed already.
+export const WHOLE_HOME_INDEX_KEYS = ['energy', 'import-energy'];
+
+/** The category and type a feature is published with, given the options. */
+export function featureKind(kind, key, { monitorEnergyTab = true } = {}) {
+  const spec = specOf(kind, key);
+  if (kind === 'monitor' && !monitorEnergyTab && WHOLE_HOME_INDEX_KEYS.includes(key)) {
+    return { category: CATEGORIES.GRID_SENSOR, type: TYPES.GRID_SENSOR.INPUT_INDEX };
+  }
+  return { category: spec.category, type: spec.type };
+}
+
 /** The keys of a monitor, in display order. */
 export function monitorKeys({ solar, phases = 0 }) {
   // Never both sets on one monitor: the two energy-sensor indexes would be costed twice.
@@ -372,9 +390,13 @@ function featureName(kind, key, language) {
  * The Gladys device of a record (discovery payload).
  * @param {object} gladys
  * @param {object} record hub record
- * @param {object} options `{ language, controls }`
+ * @param {object} options `{ language, controls, monitorEnergyTab }`
  */
-export function buildDevice(gladys, record, { language = 'fr', controls = true } = {}) {
+export function buildDevice(
+  gladys,
+  record,
+  { language = 'fr', controls = true, monitorEnergyTab = true } = {},
+) {
   const ids = deviceIds(gladys, record);
   const params = [{ name: 'SERIAL_NUMBER', value: record.serial }];
   if (record.access) {
@@ -406,8 +428,7 @@ export function buildDevice(gladys, record, { language = 'fr', controls = true }
         const feature = {
           name: featureName(record.kind, key, language),
           external_id: ids.feature(key),
-          category: spec.category,
-          type: spec.type,
+          ...featureKind(record.kind, key, { monitorEnergyTab }),
           min: spec.min,
           max: spec.max,
           read_only: !writable,

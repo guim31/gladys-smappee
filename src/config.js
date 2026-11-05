@@ -21,6 +21,7 @@ export const DEFAULT_CONFIG = {
   cloud_password: '',
   poll_interval: '10',
   controls: true,
+  monitor_energy_tab: true,
   language: 'fr',
 };
 
@@ -67,6 +68,10 @@ export function parseHosts(raw) {
   return { hosts, invalid };
 }
 
+// Booleans may come back as strings from older cores.
+const bool = (value, fallback) =>
+  value === undefined || value === null ? fallback : value !== false && value !== 'false';
+
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
 
 /**
@@ -98,11 +103,9 @@ export function normalizeConfig(raw = {}) {
     pollSeconds: POLL_INTERVALS.includes(interval)
       ? interval
       : Number(DEFAULT_CONFIG.poll_interval),
-    // Booleans may come back as strings from older cores.
-    controls:
-      source.controls === undefined
-        ? true
-        : source.controls !== false && source.controls !== 'false',
+    controls: bool(source.controls, DEFAULT_CONFIG.controls),
+    // Off: the whole-home indexes of the monitors are shown, not costed.
+    monitorEnergyTab: bool(source.monitor_energy_tab, DEFAULT_CONFIG.monitor_energy_tab),
     language: LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language,
   };
 }

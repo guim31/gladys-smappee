@@ -46,6 +46,8 @@ network, and to control the plugs known to the cloud. A monitor whose address is
 - **Local refresh interval**: how often the local readings are sent to Gladys (10 seconds by
   default). The energy indexes are always computed from every reading.
 - **Control the Smappee plugs and switches**: off, they are shown read only.
+- **Cost the monitor's consumption in the energy tab** (on by default): turn it off when another
+  meter already measures the whole home, see [Energy tab](#energy-tab).
 - **Language of the device names**: the names given to the features when a device is added.
 
 Then open the **Discovery** tab and add the devices you want.
@@ -114,6 +116,23 @@ The energy tab of Gladys 5.2 prices what the grid delivers: the **Consumption in
 Set the sub-meters, and the **Charging station energy index** of the chargers, under the main meter
 in the energy settings, so they are not counted twice.
 The grid export is shown, never added up again.
+
+### With another main meter (charging station)
+
+You already have a main meter in Gladys (Linky through Lixee, Enedis...) and the Smappee is there
+mostly to isolate what the car takes? Left as is, the home is counted twice: by the Linky and by
+the index of the monitor.
+
+1. In the configuration of the integration, turn off **Cost the monitor's consumption in the
+   energy tab** and save.
+2. Open the **Discovery** tab and click **Update** on the monitor. The **Grid import index** (or
+   the **Consumption index** without solar panels) becomes a grid index: still shown, with its
+   history, but no longer costed. Its derived consumption and cost leave the energy tab.
+3. In the energy settings, place the **Charging station energy index** under your main meter: the
+   energy tab then isolates what the car takes, day by day. The sub-meters stay costed the same
+   way.
+
+Without another meter, leave the option on: the monitor stays your main meter.
 
 ## Widget
 

@@ -28,6 +28,11 @@ official Smappee cloud API for the ones out of reach.
   production and grid exchange, as power and as energy indexes for the energy
   tab of Gladys 5.2 (computed from the powers and kept in `/data`, or added up
   from the cloud's 5-minute totals).
+- Already have a main meter in Gladys (Linky, Lixee...)? Turn off **Cost the
+  monitor's consumption in the energy tab**: the whole-home indexes of the
+  monitor stay shown with their history but are no longer costed, so the home
+  is not counted twice, and the charging station energy index isolates what the
+  car takes.
 - Smappee Switches, Comfort Plugs and output modules switched on and off from
   Gladys (can be turned off in the configuration).
 - Scene triggers: a monitor goes offline, a monitor is back online.
