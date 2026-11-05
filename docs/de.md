@@ -94,16 +94,28 @@ wird. Alle Werte werden alle 5 Minuten aktualisiert.
   die vorherige. Während des Ladens ist die Energie die an der Ladestation gemessene, einige Minuten
   verzögert;
 - **Gesamte Ladeenergie** (kWh): der Zähler der Ladestation, aus den Sitzungen gelesen. Der Wert ändert
-  sich am Ende einer Sitzung und bleibt leer bis zur ersten Sitzung der letzten 30 Tage.
+  sich am Ende einer Sitzung und bleibt leer bis zur ersten Sitzung der letzten 30 Tage;
+- **Energiezähler der Ladestation** (kWh): die Energie, die das Smappee-Messgerät auf dem Kanal der
+  Ladestation misst (nicht der Zähler der Ladestation), Block für Block aus den 5-Minuten-Daten der
+  Cloud addiert, einige Minuten verzögert. Nur für eine Ladestation, deren Messgerät über die Cloud
+  gelesen wird und die einen Messkanal hat. Er beginnt bei 0 mit dem Update der Integration: kein
+  Verlauf davor.
 
-Diese Energie ist bereits im Netzbezug des Messgeräts enthalten: Keine dieser Funktionen wird im
-Energie-Tab berechnet. Um eine Szene zu starten, nimm den Standard-Auslöser auf einen Gerätewert, zum
+Nur der **Energiezähler der Ladestation** wird im Energie-Tab berechnet: Er zeigt Tag für Tag und pro
+halbe Stunde, was das Auto lädt. Diese Energie zählt bereits der Hauptzähler: Ordne in den
+Energie-Einstellungen von Gladys den Zähler der Ladestation **unter dem Hauptzähler** ein (dem Zähler
+des Messgeräts oder einem Linky/Lixee-Zähler), sonst wird sie doppelt gezählt.
+
+Eine vor dem Update hinzugefügte Ladestation bekommt den neuen Zähler über den Tab **Entdecken** der
+Integration: Klick auf dem Gerät der Ladestation auf **Aktualisieren**. Die anderen Funktionen, der Verlauf und die Szenen der Ladestation bleiben erhalten.
+
+Um eine Szene zu starten, nimm den Standard-Auslöser auf einen Gerätewert, zum
 Beispiel wenn sich der **Ladevorgang** ändert.
 
 ## Energie-Tab
 
-Der Energie-Tab von Gladys 5.2 bepreist, was das Netz liefert: den **Verbrauchszähler** eines Messgeräts ohne Solarmodule, den **Bezugszähler** eines Messgeräts mit Solarmodulen (sein **Verbrauchszähler**, der den selbst genutzten Solarstrom enthält, wird angezeigt, aber nicht bepreist). Der **Energiezähler** der Unterzähler ist ebenfalls ein Verbrauchszähler, der **Solarproduktionszähler** ein Produktionszähler. Ordne die Unterzähler in den Energie-Einstellungen dem Messgerät unter, damit sie
-nicht doppelt gezählt werden. Die Einspeisung wird angezeigt, nie noch einmal addiert.
+Der Energie-Tab von Gladys 5.2 bepreist, was das Netz liefert: den **Verbrauchszähler** eines Messgeräts ohne Solarmodule, den **Bezugszähler** eines Messgeräts mit Solarmodulen (sein **Verbrauchszähler**, der den selbst genutzten Solarstrom enthält, wird angezeigt, aber nicht bepreist). Der **Energiezähler** der Unterzähler ist ebenfalls ein Verbrauchszähler, der **Solarproduktionszähler** ein Produktionszähler. Ordne die Unterzähler und den **Energiezähler der Ladestation** in den
+Energie-Einstellungen dem Hauptzähler unter, damit sie nicht doppelt gezählt werden. Die Einspeisung wird angezeigt, nie noch einmal addiert.
 
 ## Widget
 

@@ -10,6 +10,15 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- Charging stations: a **Charging station energy index** (kWh), the energy of
+  the charger's channel added up from the cloud's 5-minute data, costed in the
+  energy tab of Gladys 5.2 to see what the car takes, day by day. It starts at 0
+  (no history); place it under the main meter in the energy settings so it is
+  not counted twice. An existing charger gets it with **Update** in the
+  Discovery tab.
+
 ## [1.1.1] - 2026-11-02
 
 ### Fixed

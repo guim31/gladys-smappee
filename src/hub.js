@@ -18,6 +18,7 @@ import { randomBytes } from 'node:crypto';
 import { createLogger } from '@gladysassistant/integration-sdk';
 import {
   ACTUATOR_KEYS,
+  CHARGER_ENERGY_KEY,
   CHARGER_KEYS,
   SUBMETER_KEYS,
   buildDevice,
@@ -433,6 +434,11 @@ export class SmappeeHub {
       record.station = found.station;
       record.position = found.position;
       record.channels = found.channels;
+      // Its energy index needs a channel; added to an existing device too (Gladys
+      // then offers "Update" in the Discovery tab).
+      if (record.channels.length > 0) {
+        this.setKeys(record, [...CHARGER_KEYS, CHARGER_ENERGY_KEY]);
+      }
     }
   }
 
@@ -1028,6 +1034,18 @@ export class SmappeeHub {
       : ['consumption']) {
       this.meter(monitor, name);
     }
+    // The chargers with a channel get their index the same way. One that has
+    // none yet (an update, a charger just added) starts at 0 from the next
+    // block: the blocks of this read set its starting point, as a first read.
+    const chargers = this.childrenOf(monitor.serial).filter(
+      (child) => child.kind === 'charger' && child.channels.length > 0,
+    );
+    const starting = new Set(
+      first ? chargers : chargers.filter((child) => !child.meters.consumption),
+    );
+    for (const charger of chargers) {
+      this.meter(charger, 'consumption');
+    }
     for (const block of blocks) {
       if (monitor.cloudAt !== null && block.at <= monitor.cloudAt) {
         continue;
@@ -1055,6 +1073,16 @@ export class SmappeeHub {
         if (child.kind === 'charger') {
           const wh = child.channels.reduce((sum, index) => sum + (block.active[index] ?? 0), 0);
           child.live = block.active.length > 0 ? { power: Math.max(wh, 0) * 12 } : {};
+        }
+      }
+      // `active`: the Wh of each channel in these 5 minutes (none: nothing added).
+      for (const charger of chargers) {
+        if (!starting.has(charger) && block.active.length > 0) {
+          const wh = charger.channels.reduce(
+            (sum, index) => sum + Math.max(block.active[index] ?? 0, 0),
+            0,
+          );
+          this.meter(charger, 'consumption').kwh += wh / 1000;
         }
       }
     }

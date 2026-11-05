@@ -6,7 +6,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   CHARGER_ID,
@@ -266,8 +266,12 @@ test('cloud: a charger, its finished session, then a vehicle charging', async (t
   const found = device(world, 'charger', CHARGER_ID);
   assert.equal(found.name, 'Allée');
   assert.ok(found.features.every((feature) => feature.read_only));
-  // Already in the grid of the site: the energy tab must never cost it again.
-  assert.ok(found.features.every((feature) => feature.category !== 'energy-sensor'));
+  // Only its channel's index is costed (the user places it under the main meter):
+  // never the session totals, which move only when a session stops.
+  assert.deepEqual(
+    found.features.filter((f) => f.category === 'energy-sensor').map((f) => f.external_id),
+    [charger.feature('charger-energy')],
+  );
 
   // No vehicle; the last session (from and to in seconds) gives the energy and the meter.
   assert.equal(world.fake.lastState(charger.feature('connector-status')), 0);
@@ -339,6 +343,116 @@ test('cloud: a charger comes back after a restart and is read for a local monito
   const charger = local.hub.records.get(`charger:${HTTP_SERIAL}-5820000001`);
   assert.equal(charger.access, 'cloud');
   assert.equal(charger.session.total, 852.815);
+});
+
+const chargerMeter = (world, id = CHARGER_ID) =>
+  world.hub.records.get(`charger:${id}`).meters.consumption?.kwh;
+
+test('cloud: the energy index of a charger sums the Wh of its channel', async (t) => {
+  const world = await createWorld({ cloud: true, connect: false });
+  t.after(() => world.stop());
+  // Half an hour back, so that several new blocks are complete by now.
+  world.cloud.data.consumption.consumptions.forEach((block) => {
+    block.timestamp -= 30 * 60_000;
+  });
+  await world.gladys.connect();
+  await world.app.ready;
+  await createAll(world);
+  const charger = ids(world.gladys, 'charger', CHARGER_ID);
+  const feature = device(world, 'charger', CHARGER_ID).features.find(
+    (f) => f.external_id === charger.feature('charger-energy'),
+  );
+  assert.equal(feature.category, 'energy-sensor');
+  assert.equal(feature.type, 'index');
+  assert.equal(feature.unit, 'kilowatt-hour');
+  assert.equal(feature.read_only, true);
+  assert.equal(feature.name, 'Charging station energy index');
+
+  // The first read sets the starting point: its 120 Wh on channel 0 are not added.
+  assert.equal(chargerMeter(world), 0);
+  assert.equal(world.fake.lastState(charger.feature('charger-energy')), 0);
+
+  world.cloud.addBlock(200, 80, 5, [150]);
+  await world.hub.pollCloud();
+  assert.equal(chargerMeter(world), 0.15);
+  // Only the channel of the charger (0), never a negative value.
+  world.cloud.addBlock(300, 80, 5, [90, 999]);
+  world.cloud.addBlock(300, 80, 5, [-20, 999]);
+  await world.hub.pollCloud();
+  assert.equal(Math.round(chargerMeter(world) * 1000), 240);
+  // A block without channel data adds nothing.
+  world.cloud.addBlock(300, 80, 5);
+  await world.hub.pollCloud();
+  assert.equal(Math.round(chargerMeter(world) * 1000), 240);
+
+  // A block already seen is never counted twice, whatever the cloud sends again.
+  const monitor = world.hub.monitor(CLOUD_SERIAL);
+  const seen = monitor.cloudAt;
+  world.hub.applyCloudBlocks(monitor, [
+    { at: seen, consumption: 300, solar: 80, active: [500] },
+    { at: seen - 5 * 60_000, consumption: 300, solar: 80, active: [500] },
+  ]);
+  await world.hub.pollCloud();
+  assert.equal(Math.round(chargerMeter(world) * 1000), 240);
+
+  // Kept in /data, and restored.
+  await world.hub.save();
+  const saved = JSON.parse(readFileSync(join(world.dataDir, 'smappee-state.json'), 'utf8'));
+  assert.equal(Math.round(saved.records[`charger:${CHARGER_ID}`].meters.consumption * 1000), 240);
+  await world.app.stop();
+  const again = await createWorld({ dataDir: world.dataDir, connect: false });
+  t.after(() => again.stop());
+  await again.hub.restore();
+  assert.equal(Math.round(chargerMeter(again) * 1000), 240);
+});
+
+test('cloud: an existing charger gets its energy index from 0, without catch-up', async (t) => {
+  const world = await createWorld({ cloud: true });
+  t.after(() => world.stop());
+  await world.hub.save();
+  await world.app.stop();
+  // A state file written before the index: no key, no meter for the charger.
+  const file = join(world.dataDir, 'smappee-state.json');
+  const saved = JSON.parse(readFileSync(file, 'utf8'));
+  const record = saved.records[`charger:${CHARGER_ID}`];
+  record.keys = record.keys.filter((key) => key !== 'charger-energy');
+  delete record.meters.consumption;
+  // Its last block a while ago: the next read gets new blocks.
+  saved.records[`monitor:${CLOUD_SERIAL}`].cloudAt -= 6 * 60_000;
+  writeFileSync(file, JSON.stringify(saved));
+
+  const again = await createWorld({ cloud: true, dataDir: world.dataDir, connect: false });
+  t.after(() => again.stop());
+  // The first read has blocks after the monitor's last one: counted for the
+  // monitor, but they only set the charger's starting point.
+  await again.gladys.connect();
+  await again.app.ready;
+  const charger = ids(again.gladys, 'charger', CHARGER_ID);
+  assert.ok(
+    device(again, 'charger', CHARGER_ID).features.some(
+      (f) => f.external_id === charger.feature('charger-energy'),
+    ),
+  );
+  assert.ok(again.hub.monitor(CLOUD_SERIAL).meters.consumption.kwh > 0);
+  assert.equal(chargerMeter(again), 0);
+  again.cloud.addBlock(200, 80, 5, [150]);
+  await again.hub.pollCloud();
+  assert.equal(chargerMeter(again), 0.15);
+});
+
+test('cloud: a charger without a channel has no energy index', async (t) => {
+  const world = await createWorld({ cloud: true, connect: false });
+  t.after(() => world.stop());
+  world.cloud.data.meteringConfiguration.chargingStations[0].chargers[0].channels = [];
+  await world.gladys.connect();
+  await world.app.ready;
+  world.cloud.addBlock(200, 80, 5, [150]);
+  await world.hub.pollCloud();
+  const charger = ids(world.gladys, 'charger', CHARGER_ID);
+  const found = device(world, 'charger', CHARGER_ID);
+  assert.ok(found.features.every((f) => f.external_id !== charger.feature('charger-energy')));
+  assert.equal(chargerMeter(world), undefined);
+  assert.equal(world.fake.lastState(charger.feature('charger-energy')), undefined);
 });
 
 test('cloud: refused credentials are reported, without the secrets', async (t) => {

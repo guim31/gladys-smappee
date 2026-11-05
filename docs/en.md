@@ -91,16 +91,28 @@ All the values are refreshed every 5 minutes.
 - **Last session energy** (kWh) and **Last session duration**: the session under way, else the last
   one. During a charge, the energy is the one measured on the charger, a few minutes late;
 - **Total charged energy** (kWh): the meter of the charger, as read in the sessions. It moves when a
-  session stops, and stays empty until the first session of the last 30 days.
+  session stops, and stays empty until the first session of the last 30 days;
+- **Charging station energy index** (kWh): the energy measured on the charger's channel by the
+  Smappee monitor (not the meter of the charger), added up block by block from the cloud's 5-minute
+  data, a few minutes late. Only for a charger whose monitor is read through the cloud and that has a
+  measuring channel. It starts at 0 when the integration is updated: no history before.
 
-This energy is already in the grid import of the monitor: none of these features is costed in the
-energy tab. Use the standard trigger on a device value to start a scene, for example when the
+Only the **Charging station energy index** is costed in the energy tab: it shows, day by day and
+half-hour by half-hour, what the car takes. That energy is already counted by the main meter: in the
+energy settings of Gladys, place the charger's index **under the main meter** (the index of the
+monitor, or a Linky/Lixee meter), or it is counted twice.
+
+A charger added before the update gets the new index from the **Discovery** tab of the integration:
+click **Update** on the charger's device. Its other features, history and scenes are kept.
+
+Use the standard trigger on a device value to start a scene, for example when the
 **Charging state** changes.
 
 ## Energy tab
 
 The energy tab of Gladys 5.2 prices what the grid delivers: the **Consumption index** of a monitor without solar panels, the **Grid import index** of a monitor with solar panels (its **Consumption index**, which includes the solar energy used at home, is shown but not priced). The **Energy index** of the sub-meters is a consumption counter too, and the **Solar production index** a production counter.
-Set the sub-meters as children of the monitor in the energy settings, so they are not counted twice.
+Set the sub-meters, and the **Charging station energy index** of the chargers, under the main meter
+in the energy settings, so they are not counted twice.
 The grid export is shown, never added up again.
 
 ## Widget

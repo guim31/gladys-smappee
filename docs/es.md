@@ -93,16 +93,28 @@ lea en local. Todos los valores se actualizan cada 5 minutos.
 - **Energía de la última sesión** (kWh) y **Duración de la última sesión**: la sesión en curso, si no
   la anterior. Durante una carga, la energía es la medida en el cargador, con unos minutos de retraso;
 - **Energía total cargada** (kWh): el contador del cargador, leído en las sesiones. Cambia al terminar
-  una sesión, y queda vacía hasta la primera sesión de los últimos 30 días.
+  una sesión, y queda vacía hasta la primera sesión de los últimos 30 días;
+- **Índice de energía del cargador** (kWh): la energía medida por el monitor Smappee en el canal del
+  cargador (no el contador del cargador), sumada bloque a bloque a partir de los datos de 5 minutos
+  de la nube, con unos minutos de retraso. Solo para un cargador cuyo monitor se lee por la nube y
+  que tiene un canal de medida. Empieza en 0 al actualizar la integración: sin historial anterior.
 
-Esta energía ya está incluida en la importación de red del monitor: ninguna de estas funciones se
-factura en la pestaña de energía. Para iniciar una escena, use el disparador estándar sobre el valor
+Solo el **Índice de energía del cargador** se factura en la pestaña de energía: muestra, día a día y
+por media hora, lo que consume el coche. Esa energía ya la cuenta el contador principal: en los
+ajustes de energía de Gladys, coloque el índice del cargador **bajo el contador principal** (el
+índice del monitor, o un contador Linky/Lixee), si no se cuenta dos veces.
+
+Un cargador añadido antes de la actualización recibe el nuevo índice desde la pestaña
+**Descubrimiento** de la integración: haga clic en **Actualizar** en el dispositivo del cargador. Sus
+demás funciones, su historial y sus escenas se conservan.
+
+Para iniciar una escena, use el disparador estándar sobre el valor
 de un dispositivo, por ejemplo cuando cambie el **Estado de la recarga**.
 
 ## Pestaña de energía
 
-La pestaña de energía de Gladys 5.2 calcula el coste de lo que entrega la red: el **Índice de consumo** de un monitor sin paneles solares, el **Índice de importación** de un monitor con paneles solares (su **Índice de consumo**, que incluye la energía solar usada en casa, se muestra pero sin coste). El **Índice de energía** de los submedidores también es un contador de consumo, y el **Índice de producción solar** un contador de producción. Coloque los submedidores bajo el monitor en los ajustes de energía, para no
-contarlos dos veces. La exportación se muestra, nunca se vuelve a sumar.
+La pestaña de energía de Gladys 5.2 calcula el coste de lo que entrega la red: el **Índice de consumo** de un monitor sin paneles solares, el **Índice de importación** de un monitor con paneles solares (su **Índice de consumo**, que incluye la energía solar usada en casa, se muestra pero sin coste). El **Índice de energía** de los submedidores también es un contador de consumo, y el **Índice de producción solar** un contador de producción. Coloque los submedidores, y el **Índice de energía del cargador** de los
+cargadores, bajo el contador principal en los ajustes de energía, para no contarlos dos veces. La exportación se muestra, nunca se vuelve a sumar.
 
 ## Widget
 

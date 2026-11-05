@@ -22,7 +22,8 @@ official Smappee cloud API for the ones out of reach.
   plugs and switches, pushed about every second.
 - **Smappee cloud** (optional): any monitor of the account, 5-minute data,
   plugs and output modules, and the charging stations (EV Wall): connector and
-  charging state, charging power, sessions. Read-only.
+  charging state, charging power, sessions, and an energy index of the
+  charger's channel for the energy tab of Gladys 5.2. Read-only.
 - One Gladys device per monitor, keyed on its serial number: consumption,
   production and grid exchange, as power and as energy indexes for the energy
   tab of Gladys 5.2 (computed from the powers and kept in `/data`, or added up

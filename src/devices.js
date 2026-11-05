@@ -14,9 +14,10 @@
 //   - `submeter`: one per sub-circuit (CT clamps) of an Infinity / Genius;
 //   - `actuator`: one per Smappee Switch, Comfort Plug or output module;
 //   - `charger`: one per connector of a charging station, read-only and read
-//     from the cloud only (no local source). Its energy is already in the grid
-//     of the site, and a session reaches the total only when it stops: none of
-//     its features is an `energy-sensor`, so the energy tab never costs them.
+//     from the cloud only (no local source). A session reaches its total only
+//     when it stops; the energy tab gets `charger-energy` instead, the energy of
+//     the charger's channel summed from the 5-minute cloud blocks. That energy is
+//     already in the grid of the site: the user places it under the main meter.
 //
 // The monitors do not give energy counters over their local API: the indexes
 // are the power integrated by the integration (kept in /data), or the sum of
@@ -63,6 +64,7 @@ export const NAMES = {
     'session-energy': 'Last session energy',
     'session-duration': 'Last session duration',
     'total-energy': 'Total charged energy',
+    'charger-energy': 'Charging station energy index',
     charger: 'Smappee charger {n}',
   },
   fr: {
@@ -87,6 +89,7 @@ export const NAMES = {
     'session-energy': 'Énergie de la dernière session',
     'session-duration': 'Durée de la dernière session',
     'total-energy': 'Énergie totale chargée',
+    'charger-energy': "Index d'énergie de la borne",
     charger: 'Borne Smappee {n}',
   },
   de: {
@@ -111,6 +114,7 @@ export const NAMES = {
     'session-energy': 'Energie der letzten Sitzung',
     'session-duration': 'Dauer der letzten Sitzung',
     'total-energy': 'Gesamte Ladeenergie',
+    'charger-energy': 'Energiezähler der Ladestation',
     charger: 'Smappee-Ladestation {n}',
   },
   es: {
@@ -135,6 +139,7 @@ export const NAMES = {
     'session-energy': 'Energía de la última sesión',
     'session-duration': 'Duración de la última sesión',
     'total-energy': 'Energía total cargada',
+    'charger-energy': 'Índice de energía del cargador',
     charger: 'Cargador Smappee {n}',
   },
 };
@@ -270,6 +275,13 @@ const SPECS = {
       max: INDEX_MAX,
       decimals: 3,
     },
+    // The energy of the charger's channel, summed from the 5-minute cloud blocks:
+    // costed by the energy tab, to be placed under the main meter there.
+    'charger-energy': {
+      category: CATEGORIES.ENERGY_SENSOR,
+      type: TYPES.ENERGY_SENSOR.INDEX,
+      ...KWH,
+    },
   },
   actuator: {
     switch: {
@@ -320,6 +332,8 @@ export const CHARGER_KEYS = [
   'session-duration',
   'total-energy',
 ];
+// Only for a charger with a measuring channel: without one there is nothing to sum.
+export const CHARGER_ENERGY_KEY = 'charger-energy';
 
 /** The platform id of a record: the monitor serial, plus the channel or node. */
 export function platformId(record) {
@@ -473,6 +487,7 @@ export function deviceValues(record) {
       set('session-energy', session.energy);
       set('session-duration', session.minutes);
       set('total-energy', session.total);
+      set('charger-energy', energy.consumption);
       break;
     }
     default:
