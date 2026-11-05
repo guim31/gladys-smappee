@@ -327,7 +327,9 @@ http://<boîtier>/gateway/apipublic/<commande>`, corps texte brut (`load`, `load
 - Pas de découverte mDNS : HA passe par `_ssh._tcp` filtré sur le nom `smappee…`, trop large pour un
   contrat de découverte affiché à l'installation.
 - **Borne** : `charger:<site>-<série charger>`, lecture seule, toujours par le cloud (même si le
-  boîtier est lu en local). Aucune fonctionnalité `energy-sensor` : `alreadyMeasuredByGrid` est vrai, et
+  boîtier est lu en local). Seule fonctionnalité `energy-sensor` (05/11/2026) : l'index `charger-energy`,
+  somme des Wh du canal de la borne (`active[]` des blocs de 5 min), qui part de 0 sans rattrapage ;
+  l'utilisateur le place sous le compteur principal dans les réglages énergie. Jamais `total-energy` :
   un compteur qui ne bouge qu'à l'arrêt d'une session fausserait les coûts sur 30 minutes. Pas de pilotage
   (démarrage, pause, mode) : à décider à part, une erreur coûte une voiture pas chargée.
 - Pas d'action de scène : l'action standard « contrôler un appareil » suffit pour les prises ; la

@@ -95,16 +95,30 @@ lu en local. Toutes les valeurs sont rafraîchies toutes les 5 minutes.
   sinon la précédente. Pendant une charge, l'énergie est celle mesurée sur la borne, avec quelques
   minutes de retard ;
 - **Énergie totale chargée** (kWh) : le compteur de la borne, lu dans les sessions. Elle bouge à
-  l'arrêt d'une session, et reste vide jusqu'à la première session des 30 derniers jours.
+  l'arrêt d'une session, et reste vide jusqu'à la première session des 30 derniers jours ;
+- **Index d'énergie de la borne** (kWh) : l'énergie mesurée sur le canal de la borne par le boîtier
+  Smappee (et non le compteur de la borne), additionnée bloc par bloc des données sur 5 minutes du
+  cloud, avec quelques minutes de retard. Seulement pour une borne dont le boîtier est lu par le cloud
+  et qui a un canal de mesure. Il part de 0 à la mise à jour de l'intégration : aucun historique
+  avant.
 
-Cette énergie est déjà comptée dans le soutirage du boîtier : aucune de ces fonctionnalités n'est
-chiffrée dans l'onglet énergie. Pour lancer une scène, utilisez le déclencheur standard sur la valeur
+Seul l'**Index d'énergie de la borne** est chiffré dans l'onglet énergie : il montre, jour par jour
+et par demi-heure, ce que prend la voiture. Cette énergie est déjà comptée par le compteur principal :
+dans les réglages énergie de Gladys, placez l'index de la borne **sous le compteur principal**
+(l'index du boîtier, ou un compteur Linky/Lixee), sinon elle est comptée deux fois.
+
+Une borne déjà ajoutée avant la mise à jour reçoit le nouvel index par l'onglet **Découverte** de
+l'intégration : cliquez sur **Mettre à jour** sur l'appareil de la borne. Ses autres fonctionnalités,
+son historique et ses scènes sont conservés.
+
+Pour lancer une scène, utilisez le déclencheur standard sur la valeur
 d'un appareil, par exemple quand l'**État de la recharge** change.
 
 ## Onglet énergie
 
-L'onglet énergie de Gladys 5.2 chiffre ce que fournit le réseau : l'**Index de consommation** d'un boîtier sans panneaux solaires, l'**Index de soutirage** d'un boîtier avec panneaux solaires (son **Index de consommation**, qui inclut l'énergie solaire consommée sur place, est affiché mais non chiffré). L'**Index d'énergie** des sous-compteurs est aussi un compteur de consommation, et l'**Index de production solaire** un compteur de production. Placez les sous-compteurs sous le boîtier dans les réglages énergie, pour
-ne pas les compter deux fois. L'injection est affichée, jamais recomptée.
+L'onglet énergie de Gladys 5.2 chiffre ce que fournit le réseau : l'**Index de consommation** d'un boîtier sans panneaux solaires, l'**Index de soutirage** d'un boîtier avec panneaux solaires (son **Index de consommation**, qui inclut l'énergie solaire consommée sur place, est affiché mais non chiffré). L'**Index d'énergie** des sous-compteurs est aussi un compteur de consommation, et l'**Index de production solaire** un compteur de production. Placez les sous-compteurs, et l'**Index d'énergie de la borne** des
+bornes de recharge, sous le compteur principal dans les réglages énergie, pour ne pas les compter deux
+fois. L'injection est affichée, jamais recomptée.
 
 ## Widget
 
